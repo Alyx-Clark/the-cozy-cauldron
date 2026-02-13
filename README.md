@@ -25,12 +25,13 @@ You run the potion brewery at **The Cozy Cauldron**, a magical pub. Build automa
 
 ## 📋 Development Roadmap
 
-### Week 1: Core Mechanics
-- Grid placement system
-- Conveyor belts moving items
-- Cauldron combining ingredients
-- 1 recipe working (Health Potion)
-- Basic UI
+### Week 1: Core Mechanics ✅
+- ✅ Grid placement system (20×11, 64px cells)
+- ✅ Conveyor belts moving items
+- ✅ Cauldron combining ingredients
+- ✅ 2 recipes working (Health Potion, Mana Potion)
+- ✅ Basic UI (toolbar with 3 machine types)
+- ✅ Ingredient dispensers with click-to-cycle
 
 ### Week 2: Progression
 - 5 potion recipes
@@ -48,7 +49,7 @@ You run the potion brewery at **The Cozy Cauldron**, a magical pub. Build automa
 
 ## 🏗️ Technical Stack
 
-- **Engine:** Godot 4.3
+- **Engine:** Godot 4.5
 - **Language:** GDScript
 - **Platform:** Windows/Mac/Linux (Steam)
 - **Resolution:** 1280x720 base, scalable
@@ -70,7 +71,7 @@ cozy-cauldron/
 
 ## 🚀 Running the Game
 
-1. Open project in Godot 4.3+
+1. Open project in Godot 4.5+
 2. Press F5 or click "Run Project"
 
 ## 📦 Release Plan

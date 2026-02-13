@@ -6,7 +6,7 @@ Project instructions for Claude Code when working on **The Cozy Cauldron**.
 
 **The Cozy Cauldron** is a cozy 2D automation game built in Godot 4. Players build automated potion production chains using conveyor belts, cauldrons, and magical machines.
 
-**Tech Stack:** Godot 4.3, GDScript, 2D top-down view
+**Tech Stack:** Godot 4.5, GDScript, 2D top-down view
 **Target Platform:** Steam (Windows/Mac/Linux)
 **Development Timeline:** 3-4 weeks
 **Commercial Goal:** Make $100+ revenue
@@ -18,6 +18,7 @@ Project instructions for Claude Code when working on **The Cozy Cauldron**.
 3. **Cozy aesthetic** - No stress, no timers, relaxing automation
 4. **Clear progression** - 10-15 unlockable potion recipes
 5. **YouTube-friendly** - Satisfying to watch (colorful particles, smooth movement)
+6. **Warm cozy pixel wood pub** - Aesthetic should evoke a rustic wooden pub: warm tones, pixel art, cozy lighting
 
 ## Code Guidelines
 
@@ -27,25 +28,104 @@ Project instructions for Claude Code when working on **The Cozy Cauldron**.
 - **Comment non-obvious logic** - Another dev should understand it
 - **No premature optimization** - Make it work, then make it fast
 
-## Project Structure
+## Project Structure — File Map
 
 ```
-scenes/       # All .tscn scene files
-scripts/      # All .gd script files
-assets/       # Art, sounds, fonts
-  sprites/    # PNG/SVG sprites
-  sounds/     # Audio files (will use Godot synth for now)
-  fonts/      # Custom fonts
+scenes/
+  main.tscn                    # Root scene: Background + GameWorld + UI CanvasLayer
+  machines/
+    machine_base.tscn          # Base machine scene (script-only, no visuals)
+    dispenser.tscn             # Ingredient dispenser
+    conveyor_belt.tscn         # Conveyor belt
+    cauldron.tscn              # Potion-brewing cauldron
+  items/
+    item.tscn                  # Moving item entity
+
+scripts/
+  main.gd                     # Root: wires toolbar signal → game_world.select_machine
+  game_world.gd               # Placement/removal, ghost preview, input handling
+  grid_manager.gd             # 20×11 grid (64px cells), Dictionary-based storage
+  ghost_preview.gd            # Semi-transparent placement preview (valid/invalid)
+  grid_overlay.gd             # Faint grid dots for visual reference
+  data/
+    item_types.gd             # ItemTypes enum, color map, name map, is_potion()
+    recipes.gd                # Recipe lookup: sorted ingredient pair → potion type
+  items/
+    item.gd                   # Item entity: type, smooth movement at 120 px/sec
+  machines/
+    machine_base.gd           # Base class: grid_pos, direction, push/receive API
+    dispenser.gd              # Spawns ingredients every 3s, click to cycle type
+    conveyor_belt.gd          # Accepts item, waits for arrival, pushes forward
+    cauldron.gd               # Stores 2 ingredients, brews 1.5s, outputs potion
+  ui/
+    toolbar.gd                # 3 toggle buttons, emits machine_selected signal
 ```
 
-## Key Systems to Build
+## Architecture
 
-### Phase 1 (Week 1) - Core Mechanics
-- **Grid system** - Snap-to-grid placement for machines
-- **Conveyor belts** - Move items from A to B
-- **Items** - Ingredients (mushroom, herb, etc.) as objects
-- **Cauldrons** - Combine 2 ingredients → output potion
-- **Basic UI** - Placement toolbar, simple HUD
+### Scene Tree (main.tscn)
+
+```
+Main (Node2D, main.gd)
+├── Background (ColorRect, 1280×720, mouse_filter=IGNORE)
+├── GameWorld (Node2D, game_world.gd)
+│   ├── GridOverlay (Node2D, z=0)   — grid dots
+│   ├── GridManager (Node2D, z=0)   — no visuals, maintains _grid Dictionary
+│   ├── MachineContainer (Node2D, z=1) — dynamically holds placed machines
+│   ├── ItemContainer (Node2D, z=2)    — dynamically holds moving items
+│   └── GhostPreview (Node2D, z=3)     — placement preview cursor
+└── UI (CanvasLayer)
+    └── Toolbar (PanelContainer, toolbar.gd)
+```
+
+### Machine Inheritance
+
+```
+MachineBase (Node2D)          — grid_pos, direction, current_item, try_push_item(), receive_item()
+├── Dispenser                 — spawns items on timer, click to cycle ingredient
+├── ConveyorBelt              — simple relay: accept → arrive → push forward
+└── Cauldron                  — accepts 2 ingredients → brew 1.5s → output potion
+```
+
+### Item Flow (Push + Reservation)
+
+1. Machine A calls `target.receive_item(item)` — reserves target's `current_item` slot
+2. Target stores item reference; item begins smooth movement to target position
+3. Item arrives (`is_moving = false`), target can now process or push it onward
+4. `try_push_item()` checks: target exists AND `target.current_item == null`
+5. Cauldron uses `_waiting_for_arrival` flag to distinguish incoming vs. output items
+
+### Grid System
+
+- **Size:** 20×11 cells, 64px each → 1280×704 px
+- **Data:** `_grid: Dictionary` mapping `Vector2i → Node2D` (machine or null)
+- **Coords:** `world_pos = grid_pos * 64 + 32` (cell center)
+- **Key methods:** `place_machine()`, `remove_machine()`, `get_machine_at()`, `get_neighbor()`
+
+### Recipe System
+
+- **2 recipes implemented:** Mushroom+Herb → Health Potion, Crystal+Water → Mana Potion
+- **Lookup:** sorted ingredient pair key (e.g. `"1,2"`) → result type, lazy-built on first call
+- **6 item types:** MUSHROOM, HERB, CRYSTAL, WATER, HEALTH_POTION, MANA_POTION
+
+## Conventions & Gotchas
+
+- **All visuals use `_draw()`** — no external art assets, no sprites. Machines and items are drawn procedurally.
+- **Constants are duplicated** across scripts (e.g. `CELL_SIZE := 64` in both `grid_manager.gd` and `machine_base.gd`). Don't cross-reference via `class_name` — load order isn't deterministic.
+- **`mouse_filter = 2` (IGNORE)** on full-screen `ColorRect` backgrounds. Control nodes default to `MOUSE_FILTER_STOP` and will eat clicks, preventing `_unhandled_input()` from firing.
+- **`@warning_ignore("integer_division")`** for grid math (`int / int` triggers a Godot warning).
+- **Controls:** Left-click place, Right-click remove, R rotate, click dispenser (no selection) to cycle ingredient.
+
+## Development Status
+
+### Phase 1 (Week 1) - Core Mechanics — COMPLETE ✓
+- **Grid system** — 20×11 snap-to-grid with Dictionary storage, ghost preview, overlay dots
+- **Conveyor belts** — Push-based relay with smooth item movement
+- **Items** — 4 ingredients + 2 potions, colored circles via `_draw()`
+- **Cauldrons** — 2-ingredient combining with 1.5s brew timer, recipe lookup
+- **Dispensers** — Auto-spawn every 3s, click to cycle ingredient type
+- **Basic UI** — Bottom toolbar with 3 toggle buttons (Conveyor, Dispenser, Cauldron)
+- **2 recipes working** — Health Potion (Mushroom+Herb), Mana Potion (Crystal+Water)
 
 ### Phase 2 (Week 2) - Progression
 - **Recipe system** - Data-driven potion recipes
