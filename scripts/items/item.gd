@@ -2,11 +2,13 @@ class_name Item
 extends Node2D
 
 var item_type: int = ItemTypes.Type.NONE
+var is_bottled: bool = false
 
 # Movement
 var target_position: Vector2 = Vector2.ZERO
 var is_moving: bool = false
-const MOVE_SPEED := 120.0  # pixels per second
+var move_speed: float = 120.0  # pixels per second (can be overridden by fast belt)
+const DEFAULT_SPEED := 120.0
 const ITEM_RADIUS := 10.0
 
 # Called when the item finishes arriving at its target
@@ -32,10 +34,11 @@ func _process(delta: float) -> void:
 		arrived.emit()
 		return
 
-	position = position.move_toward(target_position, MOVE_SPEED * delta)
+	position = position.move_toward(target_position, move_speed * delta)
 
-func move_to(world_pos: Vector2) -> void:
+func move_to(world_pos: Vector2, speed: float = DEFAULT_SPEED) -> void:
 	target_position = world_pos
+	move_speed = speed
 	is_moving = true
 
 func _draw() -> void:
@@ -43,3 +46,11 @@ func _draw() -> void:
 	draw_circle(Vector2.ZERO, ITEM_RADIUS, color)
 	# Inner highlight
 	draw_circle(Vector2(-2, -2), ITEM_RADIUS * 0.4, Color(color, 0.5).lightened(0.4))
+
+	# Bottle outline for bottled potions
+	if is_bottled:
+		draw_arc(Vector2.ZERO, ITEM_RADIUS + 2, 0, TAU, 24, Color(0.9, 0.8, 0.5, 0.8), 2.0)
+		# Bottle neck
+		draw_line(Vector2(-3, -ITEM_RADIUS - 2), Vector2(-3, -ITEM_RADIUS - 6), Color(0.9, 0.8, 0.5, 0.8), 2.0)
+		draw_line(Vector2(3, -ITEM_RADIUS - 2), Vector2(3, -ITEM_RADIUS - 6), Color(0.9, 0.8, 0.5, 0.8), 2.0)
+		draw_line(Vector2(-3, -ITEM_RADIUS - 6), Vector2(3, -ITEM_RADIUS - 6), Color(0.9, 0.8, 0.5, 0.8), 2.0)

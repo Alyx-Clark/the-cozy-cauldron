@@ -14,9 +14,6 @@ var _brew_result: int = ItemTypes.Type.NONE
 # Whether we're waiting for an incoming item to arrive
 var _waiting_for_arrival: bool = false
 
-# Reference to item container for spawning output
-var item_container: Node2D = null
-
 func _ready() -> void:
 	machine_color = Color(0.6, 0.35, 0.65)
 	machine_label = "Cldn"

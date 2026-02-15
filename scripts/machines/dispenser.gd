@@ -3,18 +3,20 @@ extends MachineBase
 
 # Which ingredient this dispenser spawns
 var ingredient_type: int = ItemTypes.Type.MUSHROOM
-var _ingredient_index: int = 0  # Index into ItemTypes.INGREDIENTS
+var _ingredient_index: int = 0  # Index into available ingredients list
 
 # Spawn timing
 const SPAWN_INTERVAL := 3.0
 var _spawn_timer: float = 0.0
 
-# Reference to the item container (set after placement)
-var item_container: Node2D = null
-
 func _ready() -> void:
 	machine_color = Color(0.3, 0.65, 0.4)
 	machine_label = "Disp"
+	# Initialize to first available ingredient
+	var available := GameState.get_available_ingredients()
+	if not available.is_empty():
+		ingredient_type = available[0]
+		_ingredient_index = 0
 
 func _process(delta: float) -> void:
 	# Try to push out existing item first
@@ -50,10 +52,17 @@ func _try_push_forward() -> void:
 		current_item.move_to(target_pos)
 		current_item = null
 
-## Cycle to next ingredient type when clicked.
+## Cycle to next ingredient type when clicked (only available ingredients).
 func on_click() -> void:
-	_ingredient_index = (_ingredient_index + 1) % ItemTypes.INGREDIENTS.size()
-	ingredient_type = ItemTypes.INGREDIENTS[_ingredient_index]
+	var available := GameState.get_available_ingredients()
+	if available.is_empty():
+		return
+	_ingredient_index = (_ingredient_index + 1) % available.size()
+	ingredient_type = available[_ingredient_index]
+	# Discard the held item if it's the wrong type
+	if current_item != null and current_item.item_type != ingredient_type:
+		current_item.queue_free()
+		current_item = null
 	queue_redraw()
 
 func _draw() -> void:

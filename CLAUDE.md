@@ -38,27 +38,45 @@ scenes/
     dispenser.tscn             # Ingredient dispenser
     conveyor_belt.tscn         # Conveyor belt
     cauldron.tscn              # Potion-brewing cauldron
+    fast_belt.tscn             # Fast conveyor belt (2x speed)
+    storage_chest.tscn         # Item buffer (8 slots)
+    splitter.tscn              # Item duplicator (1→2)
+    sorter.tscn                # Type-based item router
+    bottler.tscn               # Potion bottling station
+    auto_seller.tscn           # Potion → gold converter
   items/
     item.tscn                  # Moving item entity
 
 scripts/
-  main.gd                     # Root: wires toolbar signal → game_world.select_machine
+  main.gd                     # Root: wires toolbar, creates managers and UI nodes
   game_world.gd               # Placement/removal, ghost preview, input handling
+  game_state.gd               # AUTOLOAD: gold, unlocks, sell prices, signals
   grid_manager.gd             # 20×11 grid (64px cells), Dictionary-based storage
   ghost_preview.gd            # Semi-transparent placement preview (valid/invalid)
   grid_overlay.gd             # Faint grid dots for visual reference
+  order_manager.gd            # Generates and tracks potion orders (max 3)
+  save_manager.gd             # JSON save/load, auto-save 60s, Ctrl+S
   data/
-    item_types.gd             # ItemTypes enum, color map, name map, is_potion()
-    recipes.gd                # Recipe lookup: sorted ingredient pair → potion type
+    item_types.gd             # ItemTypes enum (20 ingredients + 10 potions), colors, names
+    recipes.gd                # 10 recipes with unlock awareness
   items/
-    item.gd                   # Item entity: type, smooth movement at 120 px/sec
+    item.gd                   # Item entity: type, variable speed movement, is_bottled flag
   machines/
-    machine_base.gd           # Base class: grid_pos, direction, push/receive API
-    dispenser.gd              # Spawns ingredients every 3s, click to cycle type
+    machine_base.gd           # Base class: grid_pos, direction, item_container, push/receive API
+    dispenser.gd              # Spawns ingredients every 3s, smart cycling via GameState
     conveyor_belt.gd          # Accepts item, waits for arrival, pushes forward
     cauldron.gd               # Stores 2 ingredients, brews 1.5s, outputs potion
+    fast_belt.gd              # 2x speed conveyor (240 px/s)
+    storage_chest.gd          # Buffers up to 8 items, FIFO output
+    splitter.gd               # Duplicates: 1 input → 2 outputs (forward + side)
+    sorter.gd                 # Routes by type: matching → forward, other → side
+    bottler.gd                # Bottles potions (1s), sets is_bottled for 2x sell price
+    auto_seller.gd            # Sink: sells potions for gold via GameState
   ui/
-    toolbar.gd                # 3 toggle buttons, emits machine_selected signal
+    toolbar.gd                # 9 toggle buttons with lock/unlock awareness
+    gold_display.gd           # Top-right HUD: gold coin + amount
+    unlock_shop.gd            # Toggle with U key: buy recipes and machines
+    order_panel.gd            # Right-side panel: active order cards
 ```
 
 ## Architecture
@@ -74,17 +92,28 @@ Main (Node2D, main.gd)
 │   ├── MachineContainer (Node2D, z=1) — dynamically holds placed machines
 │   ├── ItemContainer (Node2D, z=2)    — dynamically holds moving items
 │   └── GhostPreview (Node2D, z=3)     — placement preview cursor
+├── OrderManager (Node, order_manager.gd) — created in main._ready()
+├── SaveManager (Node, save_manager.gd)   — created in main._ready()
 └── UI (CanvasLayer)
-    └── Toolbar (PanelContainer, toolbar.gd)
+    ├── Toolbar (PanelContainer, toolbar.gd)
+    ├── GoldDisplay (HBoxContainer)       — created in main._ready()
+    ├── OrderPanel (PanelContainer)       — created in main._ready()
+    └── UnlockShop (PanelContainer)       — created in main._ready()
 ```
 
 ### Machine Inheritance
 
 ```
-MachineBase (Node2D)          — grid_pos, direction, current_item, try_push_item(), receive_item()
-├── Dispenser                 — spawns items on timer, click to cycle ingredient
-├── ConveyorBelt              — simple relay: accept → arrive → push forward
-└── Cauldron                  — accepts 2 ingredients → brew 1.5s → output potion
+MachineBase (Node2D)          — grid_pos, direction, current_item, item_container, try_push_item(), receive_item()
+├── Dispenser                 — spawns items on timer, click to cycle (unlocked ingredients only)
+├── ConveyorBelt              — simple relay: accept → arrive → push forward (120 px/s)
+├── FastBelt                  — same as conveyor but 2x speed (240 px/s)
+├── Cauldron                  — accepts 2 ingredients → brew 1.5s → output potion
+├── StorageChest              — buffers up to 8 items, FIFO output
+├── Splitter                  — duplicates: 1 input → 2 copies (forward + 90° CW side)
+├── Sorter                    — routes by type: matching → forward, non-matching → side. Click to set filter.
+├── Bottler                   — potions only, 1.0s process, sets is_bottled (2x sell price)
+└── AutoSeller                — sink: sells potions for gold, 0.5s sell time
 ```
 
 ### Item Flow (Push + Reservation)
@@ -104,9 +133,10 @@ MachineBase (Node2D)          — grid_pos, direction, current_item, try_push_it
 
 ### Recipe System
 
-- **2 recipes implemented:** Mushroom+Herb → Health Potion, Crystal+Water → Mana Potion
-- **Lookup:** sorted ingredient pair key (e.g. `"1,2"`) → result type, lazy-built on first call
-- **6 item types:** MUSHROOM, HERB, CRYSTAL, WATER, HEALTH_POTION, MANA_POTION
+- **10 recipes implemented** (2 unlocked at start, 8 unlockable with gold)
+- **Lookup:** sorted ingredient pair key (e.g. `"1,2"`) → [recipe_index, result_type], unlock-aware
+- **30 item types:** 20 ingredients + 10 potions
+- **Unlock gating:** `Recipes.check()` returns NONE for locked recipes
 
 ## Conventions & Gotchas
 
@@ -114,7 +144,9 @@ MachineBase (Node2D)          — grid_pos, direction, current_item, try_push_it
 - **Constants are duplicated** across scripts (e.g. `CELL_SIZE := 64` in both `grid_manager.gd` and `machine_base.gd`). Don't cross-reference via `class_name` — load order isn't deterministic.
 - **`mouse_filter = 2` (IGNORE)** on full-screen `ColorRect` backgrounds. Control nodes default to `MOUSE_FILTER_STOP` and will eat clicks, preventing `_unhandled_input()` from firing.
 - **`@warning_ignore("integer_division")`** for grid math (`int / int` triggers a Godot warning).
-- **Controls:** Left-click place, Right-click remove, R rotate, click dispenser (no selection) to cycle ingredient.
+- **Controls:** Left-click place, Right-click remove, R rotate, click dispenser/sorter (no selection) to cycle type, U toggle unlock shop, Ctrl+S manual save.
+- **Autoloads can't use class_names:** `game_state.gd` uses `load()` at runtime for cross-script access. Never reference class_name identifiers in autoload scripts.
+- **Private members are enforced:** `_`-prefixed members can't be accessed cross-script in Godot 4. Use public names for shared APIs.
 
 ## Development Status
 
@@ -127,12 +159,16 @@ MachineBase (Node2D)          — grid_pos, direction, current_item, try_push_it
 - **Basic UI** — Bottom toolbar with 3 toggle buttons (Conveyor, Dispenser, Cauldron)
 - **2 recipes working** — Health Potion (Mushroom+Herb), Mana Potion (Crystal+Water)
 
-### Phase 2 (Week 2) - Progression
-- **Recipe system** - Data-driven potion recipes
-- **Unlock system** - Gold currency, unlock new recipes/machines
-- **Order/goal system** - "Make 5 health potions" goals
-- **Save/load** - Persist progress to disk
-- **4-5 machine types** - Dispensers, belts, cauldrons, bottlers, sorters
+### Phase 2 (Week 2) - Progression — COMPLETE ✓
+- **10 recipes** — 20 ingredients + 10 potions, unlock-aware brewing
+- **6 new machines** — Fast Belt, Storage Chest, Splitter, Sorter, Bottler, Auto-Seller
+- **GameState autoload** — Gold currency, potion sell prices, unlock costs
+- **Unlock shop** — U key toggles shop UI, buy recipes (50–400g) and machines (30–250g)
+- **Order system** — Up to 3 concurrent orders, no time pressure, bonus gold on completion
+- **Save/load** — JSON at user://savegame.json, auto-save 60s, Ctrl+S, save-on-quit
+- **UI** — 9-button toolbar with lock states, gold display, order panel
+- **Hand-sell** — Click potions on machines (no tool selected) to sell for half price
+- **Bootstrap economy** — Start with 0g, hand-sell to earn gold, buy Auto-Seller (250g) to automate
 
 ### Phase 3 (Week 3) - Polish
 - **Particle effects** - Bubbles, sparkles, colored liquids

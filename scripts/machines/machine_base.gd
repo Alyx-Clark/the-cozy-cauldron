@@ -14,6 +14,9 @@ var grid_manager: GridManager = null
 # Item currently on/in this machine (reservation slot)
 var current_item: Node2D = null
 
+# Reference to the item container (for machines that spawn items)
+var item_container: Node2D = null
+
 # Machine display color (override in subclasses)
 var machine_color: Color = Color(0.5, 0.5, 0.5)
 
