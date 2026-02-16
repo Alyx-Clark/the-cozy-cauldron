@@ -43,6 +43,11 @@ func _try_spawn() -> void:
 	item_container.add_child(item)
 	current_item = item
 
+	# Small spawn puff + sound
+	var ing_color: Color = ItemTypes.COLORS.get(ingredient_type, Color.WHITE)
+	EffectsManager.spawn_burst(grid_manager.grid_to_world(grid_pos), ing_color, 4, 12.0, 0.3)
+	SoundManager.play("dispense")
+
 func _try_push_forward() -> void:
 	if current_item == null or current_item.is_moving:
 		return
@@ -59,6 +64,7 @@ func on_click() -> void:
 		return
 	_ingredient_index = (_ingredient_index + 1) % available.size()
 	ingredient_type = available[_ingredient_index]
+	SoundManager.play("click")
 	# Discard the held item if it's the wrong type
 	if current_item != null and current_item.item_type != ingredient_type:
 		current_item.queue_free()

@@ -31,8 +31,11 @@ z_index = 1
 [node name="ItemContainer" type="Node2D" parent="GameWorld"]
 z_index = 2
 
+[node name="EffectsContainer" type="Node2D" parent="GameWorld"]
+z_index = 4
+
 [node name="GhostPreview" type="Node2D" parent="GameWorld"]
-z_index = 3
+z_index = 5
 script = ExtResource("5")
 
 [node name="UI" type="CanvasLayer" parent="."]

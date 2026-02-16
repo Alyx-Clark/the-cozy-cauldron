@@ -17,6 +17,7 @@ signal gold_changed(new_amount: int)
 signal recipe_unlocked(index: int)
 signal machine_unlocked(key: String)
 signal potion_sold(potion_type: int, amount: int)
+signal potion_brewed(potion_type: int)
 
 # Potion sell prices — built in _ready()
 var _potion_prices: Dictionary = {}

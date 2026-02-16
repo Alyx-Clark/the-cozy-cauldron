@@ -55,6 +55,9 @@ func _finish_bottling() -> void:
 	if current_item != null:
 		current_item.is_bottled = true
 		current_item.queue_redraw()
+	# Golden sparkle + sound on bottling complete
+	EffectsManager.spawn_burst(grid_manager.grid_to_world(grid_pos), Color(1.0, 0.85, 0.3), 6, 16.0, 0.35)
+	SoundManager.play("bottle")
 	queue_redraw()
 
 func _try_push_output() -> void:

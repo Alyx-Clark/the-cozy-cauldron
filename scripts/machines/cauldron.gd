@@ -90,6 +90,13 @@ func _finish_brewing() -> void:
 	item.setup(_brew_result, grid_manager.grid_to_world(grid_pos))
 	item_container.add_child(item)
 	current_item = item
+
+	# Brew-complete effects
+	var potion_color: Color = ItemTypes.COLORS.get(_brew_result, Color.WHITE)
+	EffectsManager.spawn_burst(grid_manager.grid_to_world(grid_pos), potion_color, 12, 24.0, 0.5)
+	SoundManager.play("brew_complete")
+	GameState.potion_brewed.emit(_brew_result)
+
 	_brew_result = ItemTypes.Type.NONE
 	queue_redraw()
 

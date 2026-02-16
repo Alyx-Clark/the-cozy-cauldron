@@ -14,6 +14,9 @@ var _next_id: int = 0
 # Reference to order panel UI (set by main.gd)
 var order_panel: Node = null
 
+# Reference to UI CanvasLayer for notifications (set by main.gd)
+var ui_layer: Node = null
+
 signal order_completed(order: Dictionary)
 
 func _ready() -> void:
@@ -77,8 +80,13 @@ func _on_potion_sold(potion_type: int, _amount: int) -> void:
 
 func _complete_order(order: Dictionary) -> void:
 	GameState.add_gold(order["reward"])
+	var reward: int = order["reward"]
 	orders.erase(order)
 	order_completed.emit(order)
+	SoundManager.play("order_complete")
+	# Show notification
+	if ui_layer != null:
+		NotificationPopup.show_notification(ui_layer, "Order Complete! +" + str(reward) + "g")
 	_update_panel()
 
 func _update_panel() -> void:

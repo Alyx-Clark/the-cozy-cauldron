@@ -142,11 +142,25 @@ func _on_recipe_buy(index: int, btn: Button) -> void:
 	if GameState.unlock_recipe(index):
 		btn.text = "Owned"
 		btn.disabled = true
+		SoundManager.play("unlock")
+		_animate_purchase(btn)
 
 func _on_machine_buy(key: String, btn: Button) -> void:
 	if GameState.unlock_machine(key):
 		btn.text = "Owned"
 		btn.disabled = true
+		SoundManager.play("unlock")
+		_animate_purchase(btn)
+
+func _animate_purchase(btn: Button) -> void:
+	# Green flash then fade back
+	btn.add_theme_color_override("font_color", Color(0.2, 1.0, 0.3))
+	var tween := btn.create_tween()
+	tween.set_parallel(true)
+	tween.tween_property(btn, "scale", Vector2(1.15, 1.15), 0.1).set_ease(Tween.EASE_OUT)
+	tween.set_parallel(false)
+	tween.tween_property(btn, "scale", Vector2(1.0, 1.0), 0.15).set_ease(Tween.EASE_IN)
+	tween.tween_callback(btn.remove_theme_color_override.bind("font_color"))
 
 func _on_gold_changed(_amount: int) -> void:
 	_refresh_button_states()

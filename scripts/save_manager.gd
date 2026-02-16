@@ -6,13 +6,15 @@ const AUTO_SAVE_INTERVAL := 60.0
 var _auto_save_timer: float = 0.0
 var _grid_manager: GridManager = null
 var _order_manager: Node = null
+var _tutorial_manager: Node = null
 
 # Stored after load for main.gd to use for machine restoration
 var loaded_machines: Array = []
 
-func setup(grid_manager: GridManager, order_manager: Node) -> void:
+func setup(grid_manager: GridManager, order_manager: Node, tutorial_manager: Node = null) -> void:
 	_grid_manager = grid_manager
 	_order_manager = order_manager
+	_tutorial_manager = tutorial_manager
 
 func _process(delta: float) -> void:
 	_auto_save_timer += delta
@@ -40,6 +42,7 @@ func save_game() -> void:
 		"unlocked_machines": GameState.unlocked_machines.duplicate(),
 		"machines": _serialize_machines(),
 		"orders": _order_manager.get_save_data() if _order_manager != null else [],
+		"tutorial_seen": _tutorial_manager.get_save_data() if _tutorial_manager != null else [],
 	}
 
 	var json_string := JSON.stringify(data, "  ")
@@ -96,6 +99,11 @@ func load_game() -> bool:
 	if _order_manager != null:
 		var saved_orders: Array = data.get("orders", [])
 		_order_manager.load_save_data(saved_orders)
+
+	# Restore tutorial state
+	if _tutorial_manager != null:
+		var saved_tutorial: Array = data.get("tutorial_seen", [])
+		_tutorial_manager.load_save_data(saved_tutorial)
 
 	return true
 

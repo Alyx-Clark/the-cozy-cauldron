@@ -60,8 +60,18 @@ func _start_selling() -> void:
 
 func _finish_selling() -> void:
 	_is_selling = false
+	var price: int = GameState.get_potion_price(_sell_type)
+	if _sell_bottled:
+		price *= 2
 	GameState.sell_potion(_sell_type, _sell_bottled)
 	_flash_timer = 0.4
+
+	# Gold burst + floating price text + sound
+	var world_pos := grid_manager.grid_to_world(grid_pos)
+	EffectsManager.spawn_burst(world_pos, Color(1.0, 0.85, 0.1), 8, 18.0, 0.4)
+	EffectsManager.spawn_gold_text(world_pos, price)
+	SoundManager.play("sell")
+
 	_sell_type = ItemTypes.Type.NONE
 	_sell_bottled = false
 	queue_redraw()

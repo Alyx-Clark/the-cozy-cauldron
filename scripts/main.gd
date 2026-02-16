@@ -5,6 +5,7 @@ extends Node2D
 
 var order_manager: Node
 var save_manager: Node
+var tutorial_manager: TutorialManager
 
 func _ready() -> void:
 	toolbar.machine_selected.connect(game_world.select_machine)
@@ -19,6 +20,13 @@ func _ready() -> void:
 	save_manager.name = "SaveManager"
 	add_child(save_manager)
 
+	# Create tutorial manager
+	tutorial_manager = TutorialManager.new()
+	tutorial_manager.name = "TutorialManager"
+	add_child(tutorial_manager)
+	tutorial_manager.setup($UI)
+	game_world.tutorial_manager = tutorial_manager
+
 	# Create gold display
 	var gold_display := preload("res://scripts/ui/gold_display.gd").new()
 	gold_display.name = "GoldDisplay"
@@ -29,6 +37,7 @@ func _ready() -> void:
 	order_panel.name = "OrderPanel"
 	$UI.add_child(order_panel)
 	order_manager.order_panel = order_panel
+	order_manager.ui_layer = $UI
 
 	# Create unlock shop
 	var unlock_shop := preload("res://scripts/ui/unlock_shop.gd").new()
@@ -36,11 +45,14 @@ func _ready() -> void:
 	$UI.add_child(unlock_shop)
 
 	# Setup save manager
-	save_manager.setup(game_world.grid_manager, order_manager)
+	save_manager.setup(game_world.grid_manager, order_manager, tutorial_manager)
 
 	# Try to load saved game
 	if save_manager.load_game():
 		_restore_machines()
+	else:
+		# Fresh start — show first tutorial hint
+		tutorial_manager.show_initial_hint()
 
 func _restore_machines() -> void:
 	var machines: Array = save_manager.loaded_machines

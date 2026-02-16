@@ -3,6 +3,7 @@ extends Node2D
 @onready var grid_manager: GridManager = $GridManager
 @onready var machine_container: Node2D = $MachineContainer
 @onready var item_container: Node2D = $ItemContainer
+@onready var effects_container: Node2D = $EffectsContainer
 @onready var ghost_preview: Node2D = $GhostPreview
 
 # Current placement direction
@@ -14,7 +15,12 @@ var selected_machine: String = ""
 # Scene references for machine types
 var _machine_scenes: Dictionary = {}
 
+# Tutorial manager reference (set by main.gd)
+var tutorial_manager: TutorialManager = null
+
 func _ready() -> void:
+	EffectsManager.setup(effects_container)
+
 	# Preload machine scenes
 	_machine_scenes["conveyor"] = preload("res://scenes/machines/conveyor_belt.tscn")
 	_machine_scenes["dispenser"] = preload("res://scenes/machines/dispenser.tscn")
@@ -86,10 +92,21 @@ func _try_place(grid_pos: Vector2i) -> void:
 	machine_container.add_child(machine)
 	grid_manager.place_machine(grid_pos, machine)
 
+	# Placement burst + sound
+	EffectsManager.spawn_burst(grid_manager.grid_to_world(grid_pos), Color(1.0, 1.0, 1.0, 0.7), 6, 16.0, 0.25)
+	SoundManager.play("place")
+
+	# Tutorial triggers
+	if tutorial_manager != null:
+		tutorial_manager.on_machine_placed(selected_machine)
+
 func _try_remove(grid_pos: Vector2i) -> void:
 	var machine := grid_manager.remove_machine(grid_pos)
 	if machine == null:
 		return
+	# Removal burst + sound
+	EffectsManager.spawn_burst(grid_manager.grid_to_world(grid_pos), Color(1.0, 0.5, 0.4, 0.7), 6, 16.0, 0.25)
+	SoundManager.play("remove")
 	# Clean up any item the machine is holding
 	if machine is MachineBase and machine.current_item != null:
 		machine.current_item.queue_free()
@@ -134,6 +151,10 @@ func _try_hand_sell(machine: MachineBase) -> bool:
 	var price: int = maxi(1, GameState.get_potion_price(machine.current_item.item_type) / 2)
 	GameState.add_gold(price)
 	GameState.potion_sold.emit(machine.current_item.item_type, price)
+	# Hand-sell effects
+	EffectsManager.spawn_burst(machine.position, Color(1.0, 0.85, 0.1), 6, 14.0, 0.3)
+	EffectsManager.spawn_gold_text(machine.position, price)
+	SoundManager.play("sell")
 	machine.current_item.queue_free()
 	machine.current_item = null
 	return true

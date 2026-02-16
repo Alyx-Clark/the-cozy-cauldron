@@ -107,6 +107,7 @@ func _add_button(parent: HBoxContainer, label: String, machine_type: String, col
 	_buttons[machine_type] = btn
 
 func _on_button_pressed(machine_type: String, btn: Button) -> void:
+	SoundManager.play("click")
 	if _current_selection == machine_type:
 		# Deselect
 		_current_selection = ""
