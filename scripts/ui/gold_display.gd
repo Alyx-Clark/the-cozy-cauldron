@@ -1,4 +1,6 @@
 extends HBoxContainer
+## Top-right HUD showing gold coin icon + amount. Animates on change:
+## scale bounces 1.0→1.2→1.0 and text flashes green (gain) or red (spend).
 
 var _label: Label
 var _previous_gold: int = 0

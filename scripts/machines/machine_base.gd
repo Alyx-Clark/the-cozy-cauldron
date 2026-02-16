@@ -1,28 +1,53 @@
 class_name MachineBase
 extends Node2D
+## Base class for all placeable machines. Implements the Push + Reservation item
+## transport model that is the core of the automation system.
+##
+## ITEM FLOW (Push + Reservation):
+## All item movement uses a "push" model — machines push items to their output
+## neighbor. The flow for each item transfer is:
+##   1. Machine A checks: does target exist AND is target.current_item == null?
+##   2. Machine A calls target.receive_item(item) — target stores item reference
+##      in current_item (reserving the slot so no other machine can send to it)
+##   3. Item begins smooth visual movement toward target's position
+##   4. Item arrives (is_moving == false) — target can now process or push onward
+##
+## The reservation prevents two machines from sending items to the same target
+## simultaneously. Machines that consume items (Cauldron, StorageChest) use
+## _waiting_for_arrival to distinguish "incoming item in transit" from
+## "output item ready to push".
+##
+## SUBCLASS CONTRACT:
+## - Override _ready() to set machine_color and machine_label
+## - Override _draw() for custom visuals (all rendering is procedural via _draw)
+## - Override receive_item() to add acceptance conditions (e.g., potions only)
+## - Call try_push_item() in _process() to push output to the next machine
+## - Optionally implement on_click() for player interaction (dispenser cycling, etc.)
 
-# Direction the machine faces (output direction)
+# Direction the machine faces (output direction).
 # RIGHT = (1,0), DOWN = (0,1), LEFT = (-1,0), UP = (0,-1)
 @export var direction: Vector2i = Vector2i.RIGHT
 
-# Grid position (set by GridManager on placement)
+# Grid position — set by game_world.gd during placement, used for neighbor lookups
 var grid_pos: Vector2i = Vector2i.ZERO
 
-# Reference to the grid manager (set on placement)
+# Set on placement by game_world.gd. Used for grid queries (neighbor lookup, bounds).
 var grid_manager: GridManager = null
 
-# Item currently on/in this machine (reservation slot)
+# The item currently on/in this machine (reservation slot).
+# Non-null means this machine is "occupied" — other machines cannot send items here.
 var current_item: Node2D = null
 
-# Reference to the item container (for machines that spawn items)
+# Shared Node2D parent for all Item instances. Set on placement by game_world.gd.
+# Machines that spawn items (Dispenser, Cauldron, StorageChest, Splitter) add
+# children to this container so items render at the correct z-layer.
 var item_container: Node2D = null
 
-# Machine display color (override in subclasses)
+# Override in subclass _ready() to set machine appearance
 var machine_color: Color = Color(0.5, 0.5, 0.5)
-
-# Machine display label (override in subclasses)
 var machine_label: String = "?"
 
+# Duplicated from GridManager (can't cross-reference class_name constants reliably)
 const CELL_SIZE := 64
 const MACHINE_SIZE := 52.0  # Slightly smaller than cell for visual gap
 

@@ -1,7 +1,8 @@
 class_name NotificationPopup
 extends Label
-
-# Self-contained notification that fades in, holds, then fades out and frees itself.
+## Self-contained notification banner. Fades in (0.25s), holds (1.5s), fades out
+## (0.5s), then queue_free's itself. Used for "Order Complete! +Xg" messages.
+## Call the static method: NotificationPopup.show_notification(parent, text)
 
 static func show_notification(parent: Node, message: String) -> void:
 	var popup := NotificationPopup.new()

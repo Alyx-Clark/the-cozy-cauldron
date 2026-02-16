@@ -1,21 +1,26 @@
 extends Node
-
-# Generates and tracks potion orders
+## Generates and tracks up to 3 concurrent potion orders. Orders require selling
+## a specific quantity of a potion type (via AutoSeller or hand-sell). No time
+## pressure — orders persist until completed. Completing an order awards bonus gold.
+##
+## Order generation: every 5s, if < 3 orders exist, pick a random unlocked potion
+## type that isn't already ordered. Quantity is 3–8, reward = base_price * qty + 50% bonus.
+##
+## Fulfillment: listens to GameState.potion_sold — each matching sale increments
+## progress by 1. When progress >= quantity, the order completes.
 
 const MAX_ORDERS := 3
-const ORDER_INTERVAL := 5.0  # Seconds between order generation attempts
+const ORDER_INTERVAL := 5.0
 const MIN_QUANTITY := 3
 const MAX_QUANTITY := 8
 
-var orders: Array = []  # Array of order dictionaries
+# Each order: { id: int, potion_type: int, quantity: int, progress: int, reward: int }
+var orders: Array = []
 var _order_timer: float = 0.0
 var _next_id: int = 0
 
-# Reference to order panel UI (set by main.gd)
-var order_panel: Node = null
-
-# Reference to UI CanvasLayer for notifications (set by main.gd)
-var ui_layer: Node = null
+var order_panel: Node = null  # OrderPanel UI reference (set by main.gd)
+var ui_layer: Node = null     # UI CanvasLayer for notification popups (set by main.gd)
 
 signal order_completed(order: Dictionary)
 

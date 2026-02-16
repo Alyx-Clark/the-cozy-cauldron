@@ -1,4 +1,16 @@
 extends Node2D
+## Root scene script. Wires together all subsystems created at runtime.
+##
+## INITIALIZATION ORDER (matters!):
+##   1. Scene-defined nodes (_ready): GameWorld, Toolbar, UI CanvasLayer
+##   2. Managers: OrderManager, SaveManager, TutorialManager (created via .new())
+##   3. UI panels: GoldDisplay, OrderPanel, UnlockShop (added to UI CanvasLayer)
+##   4. Cross-references: order_manager ↔ order_panel, save_manager ← grid + order + tutorial
+##   5. Load save (or show tutorial on fresh start)
+##   6. Restore machines from save data (if loaded)
+##
+## Most nodes are created in code (not in the .tscn) because they're pure scripts
+## with no scene structure — just a single node with a script attached.
 
 @onready var game_world: Node2D = $GameWorld
 @onready var toolbar: PanelContainer = $UI/Toolbar
@@ -10,48 +22,45 @@ var tutorial_manager: TutorialManager
 func _ready() -> void:
 	toolbar.machine_selected.connect(game_world.select_machine)
 
-	# Create order manager
+	# --- Create manager nodes (order matters: save_manager needs references to others) ---
+
 	order_manager = preload("res://scripts/order_manager.gd").new()
 	order_manager.name = "OrderManager"
 	add_child(order_manager)
 
-	# Create save manager
 	save_manager = preload("res://scripts/save_manager.gd").new()
 	save_manager.name = "SaveManager"
 	add_child(save_manager)
 
-	# Create tutorial manager
 	tutorial_manager = TutorialManager.new()
 	tutorial_manager.name = "TutorialManager"
 	add_child(tutorial_manager)
 	tutorial_manager.setup($UI)
 	game_world.tutorial_manager = tutorial_manager
 
-	# Create gold display
+	# --- Create UI panels (added to CanvasLayer so they render above the game world) ---
+
 	var gold_display := preload("res://scripts/ui/gold_display.gd").new()
 	gold_display.name = "GoldDisplay"
 	$UI.add_child(gold_display)
 
-	# Create order panel
 	var order_panel := preload("res://scripts/ui/order_panel.gd").new()
 	order_panel.name = "OrderPanel"
 	$UI.add_child(order_panel)
 	order_manager.order_panel = order_panel
-	order_manager.ui_layer = $UI
+	order_manager.ui_layer = $UI  # For notification popups
 
-	# Create unlock shop
 	var unlock_shop := preload("res://scripts/ui/unlock_shop.gd").new()
 	unlock_shop.name = "UnlockShop"
 	$UI.add_child(unlock_shop)
 
-	# Setup save manager
+	# --- Wire save manager to all persistent subsystems ---
 	save_manager.setup(game_world.grid_manager, order_manager, tutorial_manager)
 
-	# Try to load saved game
+	# --- Load or fresh start ---
 	if save_manager.load_game():
 		_restore_machines()
 	else:
-		# Fresh start — show first tutorial hint
 		tutorial_manager.show_initial_hint()
 
 func _restore_machines() -> void:

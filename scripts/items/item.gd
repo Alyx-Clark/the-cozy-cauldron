@@ -1,13 +1,16 @@
 class_name Item
 extends Node2D
+## Moving item entity — represents an ingredient or potion on the grid.
+## Pushed between machines via the reservation model (see MachineBase).
+## Rendered as a colored circle with an optional bottle outline when is_bottled=true.
 
 var item_type: int = ItemTypes.Type.NONE
-var is_bottled: bool = false
+var is_bottled: bool = false  # Set by Bottler; doubles sell price at AutoSeller
 
-# Movement
+# Smooth movement — item lerps toward target_position each frame
 var target_position: Vector2 = Vector2.ZERO
 var is_moving: bool = false
-var move_speed: float = 120.0  # pixels per second (can be overridden by fast belt)
+var move_speed: float = 120.0  # px/s; FastBelt overrides to 240
 const DEFAULT_SPEED := 120.0
 const ITEM_RADIUS := 10.0
 

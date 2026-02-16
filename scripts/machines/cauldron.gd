@@ -1,17 +1,25 @@
 class_name Cauldron
 extends MachineBase
+## Accepts 2 ingredients, brews them into a potion (if a valid unlocked recipe
+## exists), then outputs the result. Invalid recipes discard both ingredients.
+##
+## Uses _waiting_for_arrival to distinguish two uses of current_item:
+##   - true:  current_item is an incoming ingredient in transit → consume on arrival
+##   - false: current_item is a brewed output potion → push to next machine
+## This is necessary because the push model reserves current_item on receive,
+## but the cauldron needs to consume items into stored_ingredients rather than
+## holding them as output.
 
-# Cauldron stores up to 2 ingredients, then checks recipe
-var stored_ingredients: Array = []  # Array of ItemTypes.Type values
+var stored_ingredients: Array = []  # ItemTypes.Type values of ingredients waiting to combine
 const MAX_INGREDIENTS := 2
 
-# Brewing timing
 const BREW_TIME := 1.5
 var _brew_timer: float = 0.0
 var _is_brewing: bool = false
 var _brew_result: int = ItemTypes.Type.NONE
 
-# Whether we're waiting for an incoming item to arrive
+# True when current_item is an incoming ingredient (not yet consumed).
+# False when current_item is an output potion (ready to push).
 var _waiting_for_arrival: bool = false
 
 func _ready() -> void:

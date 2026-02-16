@@ -1,9 +1,21 @@
 class_name TutorialManager
 extends Node
+## Contextual hint system. Shows one hint at a time as a dismissible panel.
+##
+## TRIGGER FLOW (hint sequence for a fresh game):
+##   1. "select_dispenser" — immediately on fresh start (no save file)
+##   2. "rotate_hint"      — after placing first machine (any type)
+##   3. "place_belts"      — after placing a dispenser
+##   4. "place_cauldron"   — after 3+ machines placed
+##   5. "cycle_dispenser"  — after first potion brewed (GameState.potion_brewed signal)
+##   6. "hand_sell"        — also after first potion brewed
+##   7. "open_shop"        — after first gold earned (GameState.gold_changed signal)
+##
+## Hints never repeat — hints_seen array is persisted in save data.
+## Only one hint shows at a time (_current_hint != null blocks new hints).
+## Player dismisses by clicking anywhere (caught in _unhandled_input).
 
-# Lightweight contextual hint system. Shows one hint at a time.
-
-# Hint definitions: [id, text, trigger description]
+# [hint_id, display_text]
 const HINTS: Array = [
 	["select_dispenser", "Select a Dispenser from the toolbar, then click the grid to place it."],
 	["rotate_hint", "Press R to rotate. The arrow shows the output direction."],
@@ -14,11 +26,11 @@ const HINTS: Array = [
 	["open_shop", "Press U to open the Unlock Shop."],
 ]
 
-var hints_seen: Array = []
+var hints_seen: Array = []       # Persisted: array of hint_id strings
 var _current_hint: PanelContainer = null
-var _ui_layer: Node = null
+var _ui_layer: Node = null       # Reference to UI CanvasLayer (set by main.gd via setup())
 
-# Track game events for triggering hints
+# Runtime counters for trigger conditions (not persisted — only matter during play)
 var _machines_placed: int = 0
 var _has_brewed: bool = false
 var _has_earned_gold: bool = false

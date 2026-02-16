@@ -1,12 +1,28 @@
 extends Node
-
-# Programmatic sound effects using AudioStreamWAV.
-# All sounds generated in _ready() — no external audio files needed.
+## Autoload singleton for sound effects. Generates all audio programmatically
+## in _ready() using AudioStreamWAV — no external .wav/.ogg files needed.
+##
+## Each sound is a short buffer of 16-bit mono PCM samples at 22050 Hz, stored
+## as an AudioStreamPlayer child node. Call SoundManager.play("name") from anywhere.
+##
+## Sound palette:
+##   place          — rising sweep (machine placed)
+##   remove         — falling sweep (machine removed)
+##   brew_complete  — bright sine chime (cauldron finishes)
+##   sell           — two quick high-pitched hits (gold earned)
+##   unlock         — 3-note ascending arpeggio (shop purchase)
+##   dispense       — soft noise pop (ingredient spawned)
+##   bottle         — glass sine clink (bottler finishes)
+##   order_complete — 3-note fanfare (order fulfilled)
+##   click          — tiny noise burst (UI button)
+##
+## BYTE FORMAT: AudioStreamWAV expects raw PackedByteArray in little-endian 16-bit.
+## Each sample is 2 bytes: data[i*2] = low byte, data[i*2+1] = high byte.
 
 const SAMPLE_RATE := 22050
 const MIX_RATE := 22050
 
-var _players: Dictionary = {}
+var _players: Dictionary = {}  # name → AudioStreamPlayer
 
 func _ready() -> void:
 	_create_sound("place", _gen_sweep(300.0, 500.0, 0.08))

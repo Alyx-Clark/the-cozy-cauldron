@@ -1,7 +1,19 @@
 extends Node
-
-# Autoloads can't reference class_name identifiers at parse time.
-# All cross-script access happens at runtime via load() in _ready().
+## Global game state singleton (autoload). Owns gold, unlock state, sell prices.
+##
+## AUTOLOAD CONSTRAINT: Autoload scripts in Godot 4 cannot reference class_name
+## identifiers (e.g., Recipes, ItemTypes) at ANY point — not in const declarations,
+## not in var initializers, not in function bodies. The parser will fail silently
+## or produce cryptic errors. Use load() at runtime in _ready() to get references.
+##
+## Other scripts CAN reference this autoload by its registered name "GameState".
+##
+## SIGNALS: This is the central signal hub. Other systems connect to these:
+##   gold_changed    → GoldDisplay (UI bounce), TutorialManager (shop hint)
+##   recipe_unlocked → Toolbar, UnlockShop (button refresh)
+##   machine_unlocked→ Toolbar, UnlockShop (button refresh)
+##   potion_sold     → OrderManager (order progress tracking)
+##   potion_brewed   → TutorialManager (hint triggers)
 
 # Currency
 var gold: int = 0

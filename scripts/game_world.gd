@@ -1,4 +1,20 @@
 extends Node2D
+## The game world handles all grid interaction: placing/removing machines, ghost
+## preview, hand-selling potions, and dispatching effects/sounds/tutorial triggers.
+##
+## Input flows through _unhandled_input (so UI controls get priority):
+##   - Mouse motion → update ghost preview
+##   - Left click  → place machine (if tool selected) or interact/hand-sell (if not)
+##   - Right click → remove machine
+##   - R key       → rotate placement direction 90° CW
+##
+## Child nodes (defined in main.tscn, layered by z_index):
+##   GridOverlay (z=0)        — faint dots at grid intersections
+##   GridManager (z=0)        — no visuals, Dictionary-based grid data
+##   MachineContainer (z=1)   — parent for all placed machine Node2D instances
+##   ItemContainer (z=2)      — parent for all moving Item instances
+##   EffectsContainer (z=4)   — parent for particle bursts and floating text
+##   GhostPreview (z=5)       — translucent placement cursor
 
 @onready var grid_manager: GridManager = $GridManager
 @onready var machine_container: Node2D = $MachineContainer
@@ -6,16 +22,13 @@ extends Node2D
 @onready var effects_container: Node2D = $EffectsContainer
 @onready var ghost_preview: Node2D = $GhostPreview
 
-# Current placement direction
-var current_direction: Vector2i = Vector2i.RIGHT
+var current_direction: Vector2i = Vector2i.RIGHT  # Placement direction, rotated with R
+var selected_machine: String = ""                  # Current toolbar selection ("" = none)
 
-# Currently selected machine type (set by toolbar)
-var selected_machine: String = ""
-
-# Scene references for machine types
+# Preloaded PackedScenes keyed by machine type string (e.g., "conveyor" → conveyor_belt.tscn)
 var _machine_scenes: Dictionary = {}
 
-# Tutorial manager reference (set by main.gd)
+# Set by main.gd after creation. Used to fire contextual tutorial hints.
 var tutorial_manager: TutorialManager = null
 
 func _ready() -> void:

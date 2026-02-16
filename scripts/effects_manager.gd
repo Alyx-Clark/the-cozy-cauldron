@@ -1,6 +1,13 @@
 class_name EffectsManager
-
-# Static factory for visual effects. Call setup() once with the container node.
+## Static factory for visual particle effects and floating text.
+##
+## Uses static methods so any script can call EffectsManager.spawn_burst() without
+## needing a reference to an instance. The container node is set once from
+## game_world._ready() via setup().
+##
+## Uses CPUParticles2D (not GPUParticles2D) because the project uses the
+## GL Compatibility renderer, which doesn't support GPU particles.
+## All particles are one_shot=true and auto-free via the finished signal.
 
 static var _container: Node2D = null
 

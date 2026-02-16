@@ -1,4 +1,20 @@
 extends Node
+## JSON save/load with auto-save every 60s, manual Ctrl+S, and save-on-quit.
+##
+## SAVE FORMAT (user://savegame.json):
+##   gold: int
+##   unlocked_recipes: Array[int]     — recipe indices
+##   unlocked_machines: Array[String] — machine type keys
+##   machines: Array[Dict]            — grid_pos, direction, type, per-machine config
+##   orders: Array[Dict]              — active order state
+##   tutorial_seen: Array[String]     — hint IDs (added in Phase 3)
+##
+## BACKWARD COMPATIBILITY: New fields use data.get("key", default) so saves from
+## earlier phases load without error. Missing fields get sensible defaults.
+##
+## MACHINE RESTORATION: After load_game(), the machine layout is stored in
+## loaded_machines for main.gd to iterate and re-instantiate. This two-step
+## process exists because save_manager doesn't own the machine scenes.
 
 const SAVE_PATH := "user://savegame.json"
 const AUTO_SAVE_INTERVAL := 60.0
@@ -8,7 +24,7 @@ var _grid_manager: GridManager = null
 var _order_manager: Node = null
 var _tutorial_manager: Node = null
 
-# Stored after load for main.gd to use for machine restoration
+# Populated by load_game() — main.gd reads this to restore the machine layout
 var loaded_machines: Array = []
 
 func setup(grid_manager: GridManager, order_manager: Node, tutorial_manager: Node = null) -> void:
