@@ -12,6 +12,7 @@ var _waiting_for_arrival: bool = false
 func _ready() -> void:
 	machine_color = Color(0.55, 0.38, 0.2)  # Brown
 	machine_label = "Chest"
+	setup_sprite("storage")
 
 func _process(_delta: float) -> void:
 	# Handle incoming item arrival
@@ -69,15 +70,7 @@ func _try_push_output() -> void:
 		current_item = null
 
 func _draw() -> void:
-	# Draw chest body
-	var rect := Rect2(-MACHINE_SIZE / 2, -MACHINE_SIZE / 2, MACHINE_SIZE, MACHINE_SIZE)
-	draw_rect(rect, machine_color)
-
-	# Draw chest lid line
-	var lid_y := -MACHINE_SIZE / 2 + 10
-	draw_line(Vector2(-MACHINE_SIZE / 2 + 4, lid_y), Vector2(MACHINE_SIZE / 2 - 4, lid_y), Color(0.4, 0.28, 0.15), 2.0)
-
-	# Draw stored item dots (up to 8, in a 4x2 grid)
+	# Draw stored item dots (up to 8, in a 4x2 grid) overlay on sprite
 	for i in range(stored_items.size()):
 		@warning_ignore("integer_division")
 		var col := i % 4
@@ -90,15 +83,6 @@ func _draw() -> void:
 
 	# Count label
 	if not stored_items.is_empty():
-		# Small number indicator
 		draw_string(ThemeDB.fallback_font, Vector2(-6, -6), str(stored_items.size()), HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(1, 1, 1, 0.7))
 
-	# Direction arrow
-	var arrow_color := Color(1, 1, 1, 0.6)
-	var dir_vec := Vector2(direction)
-	var arrow_end := dir_vec * (MACHINE_SIZE / 2 - 4)
-	draw_line(Vector2.ZERO, arrow_end, arrow_color, 2.0)
-	var tip := arrow_end
-	var perp := Vector2(-direction.y, direction.x) * 5.0
-	var back := dir_vec * -8.0
-	draw_colored_polygon([tip, tip + back + perp, tip + back - perp], arrow_color)
+	draw_direction_arrow()

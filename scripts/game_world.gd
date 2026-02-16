@@ -37,6 +37,19 @@ var region_manager: RegionManager = null
 
 const BUILD_RANGE := 5  # Max cells from player to place/interact
 
+# Sprite paths per machine type (duplicated — don't cross-reference class_name constants)
+const MACHINE_SPRITE_PATHS: Dictionary = {
+	"conveyor": "res://assets/sprites/machines/conveyor.png",
+	"fast_belt": "res://assets/sprites/machines/fast_belt.png",
+	"dispenser": "res://assets/sprites/machines/dispenser.png",
+	"cauldron": "res://assets/sprites/machines/cauldron.png",
+	"storage": "res://assets/sprites/machines/storage.png",
+	"splitter": "res://assets/sprites/machines/splitter.png",
+	"sorter": "res://assets/sprites/machines/sorter.png",
+	"bottler": "res://assets/sprites/machines/bottler.png",
+	"auto_seller": "res://assets/sprites/machines/auto_seller.png",
+}
+
 func _ready() -> void:
 	EffectsManager.setup(effects_container)
 
@@ -85,9 +98,9 @@ func _update_ghost_preview(world_mouse_pos: Vector2) -> void:
 	# Check region is unlocked
 	if region_manager != null and not region_manager.is_unlocked(grid_pos):
 		valid = false
-	var color := _get_machine_color(selected_machine)
 
-	ghost_preview.update_preview(world_pos, color, current_direction, valid)
+	var texture_path: String = MACHINE_SPRITE_PATHS.get(selected_machine, "")
+	ghost_preview.update_preview(world_pos, texture_path, current_direction, valid)
 
 func _try_place(grid_pos: Vector2i) -> void:
 	if selected_machine == "":
@@ -151,29 +164,6 @@ func _try_remove(grid_pos: Vector2i) -> void:
 func _rotate_direction() -> void:
 	current_direction = Vector2i(-current_direction.y, current_direction.x)
 	_update_ghost_preview(get_global_mouse_position())
-
-func _get_machine_color(machine_type: String) -> Color:
-	match machine_type:
-		"conveyor":
-			return Color(0.45, 0.45, 0.5)
-		"dispenser":
-			return Color(0.3, 0.65, 0.4)
-		"cauldron":
-			return Color(0.6, 0.35, 0.65)
-		"fast_belt":
-			return Color(0.75, 0.6, 0.2)
-		"storage":
-			return Color(0.55, 0.38, 0.2)
-		"splitter":
-			return Color(0.6, 0.3, 0.7)
-		"sorter":
-			return Color(0.2, 0.6, 0.6)
-		"bottler":
-			return Color(0.75, 0.55, 0.15)
-		"auto_seller":
-			return Color(0.8, 0.7, 0.1)
-		_:
-			return Color(0.5, 0.5, 0.5)
 
 ## Hand-sell: click a machine holding a potion to sell it manually for half price.
 func _try_hand_sell(machine: MachineBase) -> bool:

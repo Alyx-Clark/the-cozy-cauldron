@@ -2,6 +2,7 @@ extends Node2D
 ## Root scene script. Wires together all subsystems created at runtime.
 ##
 ## INITIALIZATION ORDER (matters!):
+##   0. Floor setup: replace Background ColorRect with TileMapLayer wood floor
 ##   1. Scene-defined nodes (_ready): GameWorld, Toolbar, UI CanvasLayer
 ##   2. Player + RegionManager (structural — needed before save/load)
 ##   3. Managers: OrderManager, SaveManager, TutorialManager (created via .new())
@@ -28,10 +29,15 @@ var _region_prompt: Node = null
 var _prompt_region_id: int = -1
 
 const CELL_SIZE := 64
+const GRID_WIDTH := 60
+const GRID_HEIGHT := 35
 # Default player spawn: center of Region 0 (Starter Workshop: 0,0 → 14,11)
 const DEFAULT_SPAWN := Vector2(7 * 64 + 32, 5 * 64 + 32)
 
 func _ready() -> void:
+	# Replace Background ColorRect with TileMapLayer wood floor
+	_setup_floor()
+
 	toolbar.machine_selected.connect(game_world.select_machine)
 
 	# --- Create Player (CharacterBody2D with Camera2D) ---
@@ -183,3 +189,39 @@ func _get_nearby_locked_region(player_gp: Vector2i) -> Dictionary:
 			if not region.is_empty() and not (region["id"] in region_manager.unlocked_regions):
 				return region
 	return {}
+
+## Replace the Background ColorRect with a TileMapLayer showing warm wood floor.
+func _setup_floor() -> void:
+	# Remove the old ColorRect background
+	var bg := $Background
+	if bg != null:
+		bg.queue_free()
+
+	# Build TileSet from floor atlas
+	var atlas_tex := load("res://assets/sprites/tiles/floor_atlas.png") as Texture2D
+	var tile_set := TileSet.new()
+	tile_set.tile_size = Vector2i(CELL_SIZE, CELL_SIZE)
+
+	var atlas_source := TileSetAtlasSource.new()
+	atlas_source.texture = atlas_tex
+	atlas_source.texture_region_size = Vector2i(CELL_SIZE, CELL_SIZE)
+	# Must explicitly create tiles (Godot 4 won't auto-create them)
+	atlas_source.create_tile(Vector2i(0, 0))
+	atlas_source.create_tile(Vector2i(1, 0))
+	tile_set.add_source(atlas_source)
+
+	# Create TileMapLayer and fill with alternating tiles
+	var floor_layer := TileMapLayer.new()
+	floor_layer.name = "FloorLayer"
+	floor_layer.tile_set = tile_set
+	floor_layer.z_index = -1
+
+	for x in range(GRID_WIDTH):
+		for y in range(GRID_HEIGHT):
+			# Checkerboard pattern using 2 tile variants
+			var tile_x: int = (x + y) % 2
+			floor_layer.set_cell(Vector2i(x, y), 0, Vector2i(tile_x, 0))
+
+	# Insert as first child of Main (below everything)
+	add_child(floor_layer)
+	move_child(floor_layer, 0)

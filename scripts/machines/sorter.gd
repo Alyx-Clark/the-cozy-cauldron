@@ -12,6 +12,7 @@ var _waiting_for_arrival: bool = false
 func _ready() -> void:
 	machine_color = Color(0.2, 0.6, 0.6)  # Teal
 	machine_label = "Sort"
+	setup_sprite("sorter")
 
 func _get_side_direction() -> Vector2i:
 	return Vector2i(-direction.y, direction.x)
@@ -88,18 +89,14 @@ func on_click() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	# Draw sorter body
-	var rect := Rect2(-MACHINE_SIZE / 2, -MACHINE_SIZE / 2, MACHINE_SIZE, MACHINE_SIZE)
-	draw_rect(rect, machine_color)
-
-	# Draw filter indicator
+	# Filter indicator overlay
 	if filter_type != ItemTypes.Type.NONE:
 		var filter_color: Color = ItemTypes.COLORS.get(filter_type, Color.WHITE)
 		draw_circle(Vector2(0, -8), 8.0, filter_color)
 	else:
-		# Draw "all" indicator (white ring)
 		draw_arc(Vector2(0, -8), 8.0, 0, TAU, 16, Color(1, 1, 1, 0.5), 2.0)
 
+	# Dual arrows overlay
 	var arrow_color := Color(1, 1, 1, 0.6)
 	var dir_vec := Vector2(direction)
 	var side_vec := Vector2(_get_side_direction())

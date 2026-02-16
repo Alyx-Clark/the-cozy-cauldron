@@ -132,6 +132,44 @@ const INGREDIENTS: Array = [
 	Type.STAR,
 ]
 
+# Sprite texture paths per item type
+const SPRITE_PATHS: Dictionary = {
+	# Ingredients
+	Type.MUSHROOM: "res://assets/sprites/items/mushroom.png",
+	Type.HERB: "res://assets/sprites/items/herb.png",
+	Type.CRYSTAL: "res://assets/sprites/items/crystal.png",
+	Type.WATER: "res://assets/sprites/items/water.png",
+	Type.FEATHER: "res://assets/sprites/items/feather.png",
+	Type.LIGHTNING: "res://assets/sprites/items/lightning.png",
+	Type.ROSE: "res://assets/sprites/items/rose.png",
+	Type.HEART: "res://assets/sprites/items/heart.png",
+	Type.SHADOW: "res://assets/sprites/items/shadow.png",
+	Type.MOONLIGHT: "res://assets/sprites/items/moonlight.png",
+	Type.ICE: "res://assets/sprites/items/ice.png",
+	Type.LAVA: "res://assets/sprites/items/lava.png",
+	Type.DRAGON_SCALE: "res://assets/sprites/items/dragon_scale.png",
+	Type.EMBER: "res://assets/sprites/items/ember.png",
+	Type.GLOWSHROOM: "res://assets/sprites/items/glowshroom.png",
+	Type.EYE: "res://assets/sprites/items/eye.png",
+	Type.SEAWEED: "res://assets/sprites/items/seaweed.png",
+	Type.BUBBLE: "res://assets/sprites/items/bubble.png",
+	Type.CLOVER: "res://assets/sprites/items/clover.png",
+	Type.STAR: "res://assets/sprites/items/star.png",
+	# Potions
+	Type.HEALTH_POTION: "res://assets/sprites/items/health_potion.png",
+	Type.MANA_POTION: "res://assets/sprites/items/mana_potion.png",
+	Type.SPEED_POTION: "res://assets/sprites/items/speed_potion.png",
+	Type.LOVE_POTION: "res://assets/sprites/items/love_potion.png",
+	Type.INVISIBILITY_POTION: "res://assets/sprites/items/invisibility_potion.png",
+	Type.FIRE_RESISTANCE_POTION: "res://assets/sprites/items/fire_resistance_potion.png",
+	Type.STRENGTH_POTION: "res://assets/sprites/items/strength_potion.png",
+	Type.NIGHT_VISION_POTION: "res://assets/sprites/items/night_vision_potion.png",
+	Type.WATER_BREATHING_POTION: "res://assets/sprites/items/water_breathing_potion.png",
+	Type.LUCKY_POTION: "res://assets/sprites/items/lucky_potion.png",
+}
+
+const BOTTLE_OVERLAY_PATH := "res://assets/sprites/items/bottle_overlay.png"
+
 # Whether an item type is a potion
 static func is_potion(type: Type) -> bool:
 	return type >= Type.HEALTH_POTION

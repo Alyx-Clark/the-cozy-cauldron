@@ -15,14 +15,58 @@ extends CharacterBody2D
 ## a 5-cell build range (Chebyshev distance). get_grid_pos() converts the pixel
 ## position to grid coordinates for this check.
 ##
-## VISUALS: Placeholder _draw() renders a purple circle + triangle hat + facing
-## indicator dot. Will be replaced with AnimatedSprite2D in Phase 5.
+## VISUALS: AnimatedSprite2D with 4-direction walk/idle from spritesheet.
 
 const MOVE_SPEED := 200.0  # px/s
 const CELL_SIZE := 64       # Duplicated from GridManager (load order safety)
+const FRAME_SIZE := Vector2(32, 48)
+const WALK_FPS := 8
 
-## Last movement direction -- used for the visual facing indicator.
+## Last movement direction -- used for animation selection and build range.
 var facing: Vector2i = Vector2i.DOWN
+
+var _anim_sprite: AnimatedSprite2D = null
+
+func _ready() -> void:
+	_setup_animated_sprite()
+
+func _setup_animated_sprite() -> void:
+	var spritesheet := load("res://assets/sprites/player/player_spritesheet.png") as Texture2D
+	var frames := SpriteFrames.new()
+	# Remove the auto-created "default" animation
+	frames.remove_animation("default")
+
+	# Rows: 0=down, 1=right, 2=up, 3=left
+	var dir_names := ["down", "right", "up", "left"]
+
+	for row in range(4):
+		var walk_name: String = "walk_" + dir_names[row]
+		var idle_name: String = "idle_" + dir_names[row]
+
+		# Walk animation (4 frames, looping)
+		frames.add_animation(walk_name)
+		frames.set_animation_speed(walk_name, WALK_FPS)
+		frames.set_animation_loop(walk_name, true)
+		for col in range(4):
+			var atlas := AtlasTexture.new()
+			atlas.atlas = spritesheet
+			atlas.region = Rect2(col * FRAME_SIZE.x, row * FRAME_SIZE.y, FRAME_SIZE.x, FRAME_SIZE.y)
+			frames.add_frame(walk_name, atlas)
+
+		# Idle animation (1 frame, non-looping)
+		frames.add_animation(idle_name)
+		frames.set_animation_speed(idle_name, 1)
+		frames.set_animation_loop(idle_name, false)
+		var idle_atlas := AtlasTexture.new()
+		idle_atlas.atlas = spritesheet
+		idle_atlas.region = Rect2(0, row * FRAME_SIZE.y, FRAME_SIZE.x, FRAME_SIZE.y)
+		frames.add_frame(idle_name, idle_atlas)
+
+	_anim_sprite = AnimatedSprite2D.new()
+	_anim_sprite.sprite_frames = frames
+	_anim_sprite.offset = Vector2(0, -8)  # Align feet with collision center
+	_anim_sprite.play("idle_down")
+	add_child(_anim_sprite)
 
 func _physics_process(_delta: float) -> void:
 	# Poll WASD input (not ui_* actions -- those would conflict with UI navigation)
@@ -53,19 +97,27 @@ func _physics_process(_delta: float) -> void:
 	position.x = clampf(position.x, 16.0, 60.0 * CELL_SIZE - 16.0)
 	position.y = clampf(position.y, 16.0, 35.0 * CELL_SIZE - 16.0)
 
-	queue_redraw()
+	_update_animation()
 
-func _draw() -> void:
-	# Placeholder wizard -- purple circle body + hat triangle + facing dot
-	draw_circle(Vector2.ZERO, 14, Color(0.6, 0.3, 0.8))
-	draw_circle(Vector2.ZERO, 14, Color(0.7, 0.4, 0.9), false, 2.0)
-	draw_colored_polygon([
-		Vector2(-8, -10),
-		Vector2(8, -10),
-		Vector2(0, -24),
-	], Color(0.4, 0.2, 0.6))
-	var indicator_pos := Vector2(facing) * 10.0
-	draw_circle(indicator_pos, 3, Color(1, 1, 1, 0.6))
+func _update_animation() -> void:
+	if _anim_sprite == null:
+		return
+
+	var dir_name: String
+	if facing == Vector2i.DOWN:
+		dir_name = "down"
+	elif facing == Vector2i.UP:
+		dir_name = "up"
+	elif facing == Vector2i.RIGHT:
+		dir_name = "right"
+	else:
+		dir_name = "left"
+
+	var is_walking: bool = velocity.length_squared() > 0.1
+	var anim_name: String = ("walk_" if is_walking else "idle_") + dir_name
+
+	if _anim_sprite.animation != anim_name:
+		_anim_sprite.play(anim_name)
 
 ## Convert pixel position to grid coordinates for build range checks.
 func get_grid_pos() -> Vector2i:

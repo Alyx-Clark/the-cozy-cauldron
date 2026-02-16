@@ -18,8 +18,8 @@ extends Node2D
 ## "output item ready to push".
 ##
 ## SUBCLASS CONTRACT:
-## - Override _ready() to set machine_color and machine_label
-## - Override _draw() for custom visuals (all rendering is procedural via _draw)
+## - Override _ready() to call setup_sprite("type_key") for sprite visuals
+## - Override _draw() for overlay visuals (arrows, indicators) drawn ON TOP of sprite
 ## - Override receive_item() to add acceptance conditions (e.g., potions only)
 ## - Call try_push_item() in _process() to push output to the next machine
 ## - Optionally implement on_click() for player interaction (dispenser cycling, etc.)
@@ -47,22 +47,52 @@ var item_container: Node2D = null
 var machine_color: Color = Color(0.5, 0.5, 0.5)
 var machine_label: String = "?"
 
+# Sprite child node for machine texture (created by setup_sprite)
+var machine_sprite: Sprite2D = null
+
 # Duplicated from GridManager (can't cross-reference class_name constants reliably)
 const CELL_SIZE := 64
 const MACHINE_SIZE := 52.0  # Slightly smaller than cell for visual gap
 
+# Sprite texture paths per machine type (duplicated — don't cross-reference class_name)
+const SPRITE_PATHS: Dictionary = {
+	"conveyor": "res://assets/sprites/machines/conveyor.png",
+	"fast_belt": "res://assets/sprites/machines/fast_belt.png",
+	"dispenser": "res://assets/sprites/machines/dispenser.png",
+	"cauldron": "res://assets/sprites/machines/cauldron.png",
+	"storage": "res://assets/sprites/machines/storage.png",
+	"splitter": "res://assets/sprites/machines/splitter.png",
+	"sorter": "res://assets/sprites/machines/sorter.png",
+	"bottler": "res://assets/sprites/machines/bottler.png",
+	"auto_seller": "res://assets/sprites/machines/auto_seller.png",
+}
+
+## Create a Sprite2D child with the machine texture, rotated to match direction.
+## Called from subclass _ready(). show_behind_parent ensures _draw() overlays
+## render ON TOP of the sprite.
+func setup_sprite(machine_type: String) -> void:
+	if not SPRITE_PATHS.has(machine_type):
+		return
+	machine_sprite = Sprite2D.new()
+	machine_sprite.texture = load(SPRITE_PATHS[machine_type])
+	machine_sprite.show_behind_parent = true
+	machine_sprite.rotation = Vector2(direction).angle()
+	add_child(machine_sprite)
+
+## Update sprite rotation to match current direction.
+func _update_sprite_rotation() -> void:
+	if machine_sprite != null:
+		machine_sprite.rotation = Vector2(direction).angle()
+
 func _draw() -> void:
-	# Draw machine body
-	var rect := Rect2(-MACHINE_SIZE / 2, -MACHINE_SIZE / 2, MACHINE_SIZE, MACHINE_SIZE)
-	draw_rect(rect, machine_color)
+	# Draw direction arrow overlay (on top of sprite)
+	draw_direction_arrow()
 
-	# Draw direction arrow
+## Draw a direction arrow. Reusable helper for subclasses.
+func draw_direction_arrow() -> void:
 	var arrow_color := Color(1, 1, 1, 0.8)
-	var arrow_start := Vector2.ZERO
 	var arrow_end := Vector2(direction) * (MACHINE_SIZE / 2 - 4)
-	draw_line(arrow_start, arrow_end, arrow_color, 2.0)
-
-	# Draw small triangle at arrow tip
+	draw_line(Vector2.ZERO, arrow_end, arrow_color, 2.0)
 	var tip := arrow_end
 	var perp := Vector2(-direction.y, direction.x) * 5.0
 	var back := Vector2(direction) * -8.0
@@ -72,6 +102,7 @@ func _draw() -> void:
 func rotate_cw() -> void:
 	# (x,y) → (−y,x) for CW rotation
 	direction = Vector2i(-direction.y, direction.x)
+	_update_sprite_rotation()
 	queue_redraw()
 
 ## Get the grid position this machine outputs to.

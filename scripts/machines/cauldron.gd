@@ -25,6 +25,7 @@ var _waiting_for_arrival: bool = false
 func _ready() -> void:
 	machine_color = Color(0.6, 0.35, 0.65)
 	machine_label = "Cldn"
+	setup_sprite("cauldron")
 
 func _process(delta: float) -> void:
 	if _is_brewing:
@@ -117,15 +118,7 @@ func _try_push_output() -> void:
 		current_item = null
 
 func _draw() -> void:
-	# Draw cauldron body
-	var rect := Rect2(-MACHINE_SIZE / 2, -MACHINE_SIZE / 2, MACHINE_SIZE, MACHINE_SIZE)
-	draw_rect(rect, machine_color)
-
-	# Inner cauldron bowl
-	var bowl_color := Color(0.15, 0.1, 0.2)
-	draw_circle(Vector2.ZERO, 18.0, bowl_color)
-
-	# Show stored ingredients as small dots
+	# Show stored ingredients as small dots (overlay on sprite)
 	if not stored_ingredients.is_empty():
 		for i in range(stored_ingredients.size()):
 			var offset := Vector2(-8 + i * 16, 0)
@@ -141,12 +134,4 @@ func _draw() -> void:
 			var pos := Vector2(cos(angle), sin(angle)) * 10.0
 			draw_circle(pos, 3.0, bubble_color)
 
-	# Direction arrow (output direction)
-	var arrow_color := Color(1, 1, 1, 0.6)
-	var dir_vec := Vector2(direction)
-	var arrow_end := dir_vec * (MACHINE_SIZE / 2 - 4)
-	draw_line(Vector2.ZERO, arrow_end, arrow_color, 2.0)
-	var tip := arrow_end
-	var perp := Vector2(-direction.y, direction.x) * 5.0
-	var back := dir_vec * -8.0
-	draw_colored_polygon([tip, tip + back + perp, tip + back - perp], arrow_color)
+	draw_direction_arrow()

@@ -17,6 +17,7 @@ var _flash_timer: float = 0.0
 func _ready() -> void:
 	machine_color = Color(0.8, 0.7, 0.1)  # Gold
 	machine_label = "Sell"
+	setup_sprite("auto_seller")
 
 func _process(delta: float) -> void:
 	# Flash effect fade
@@ -77,18 +78,7 @@ func _finish_selling() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	# Draw seller body
-	var rect := Rect2(-MACHINE_SIZE / 2, -MACHINE_SIZE / 2, MACHINE_SIZE, MACHINE_SIZE)
-	draw_rect(rect, machine_color)
-
-	# Gold coin icon
-	var coin_color := Color(1.0, 0.85, 0.1)
-	draw_circle(Vector2.ZERO, 12.0, coin_color)
-	draw_circle(Vector2.ZERO, 8.0, Color(0.9, 0.75, 0.05))
-	# "G" on coin
-	draw_string(ThemeDB.fallback_font, Vector2(-5, 5), "G", HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.7, 0.55, 0.0))
-
-	# Selling progress
+	# Selling progress arc overlay
 	if _is_selling:
 		var progress := _sell_timer / SELL_TIME
 		draw_arc(Vector2.ZERO, 16.0, -PI / 2, -PI / 2 + TAU * progress, 24, Color(1, 1, 1, 0.6), 2.0)
@@ -98,4 +88,4 @@ func _draw() -> void:
 		var alpha := _flash_timer / 0.4
 		draw_circle(Vector2.ZERO, 20.0 + (1.0 - alpha) * 8.0, Color(1, 1, 0.5, alpha * 0.4))
 
-	# No direction arrow needed — this is a sink
+	# No direction arrow — this is a sink

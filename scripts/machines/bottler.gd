@@ -13,6 +13,7 @@ var _bottle_timer: float = 0.0
 func _ready() -> void:
 	machine_color = Color(0.75, 0.55, 0.15)  # Amber
 	machine_label = "Btl"
+	setup_sprite("bottler")
 
 func _process(delta: float) -> void:
 	if _is_bottling:
@@ -53,8 +54,7 @@ func _start_bottling() -> void:
 func _finish_bottling() -> void:
 	_is_bottling = false
 	if current_item != null:
-		current_item.is_bottled = true
-		current_item.queue_redraw()
+		current_item.set_bottled(true)
 	# Golden sparkle + sound on bottling complete
 	EffectsManager.spawn_burst(grid_manager.grid_to_world(grid_pos), Color(1.0, 0.85, 0.3), 6, 16.0, 0.35)
 	SoundManager.play("bottle")
@@ -69,29 +69,10 @@ func _try_push_output() -> void:
 		current_item = null
 
 func _draw() -> void:
-	# Draw bottler body
-	var rect := Rect2(-MACHINE_SIZE / 2, -MACHINE_SIZE / 2, MACHINE_SIZE, MACHINE_SIZE)
-	draw_rect(rect, machine_color)
-
-	# Draw bottle icon in center
-	var bottle_color := Color(0.9, 0.85, 0.7, 0.7)
-	# Bottle body
-	draw_rect(Rect2(-6, -4, 12, 14), bottle_color, false, 2.0)
-	# Bottle neck
-	draw_rect(Rect2(-3, -10, 6, 6), bottle_color, false, 2.0)
-
-	# Bottling progress indicator
+	# Bottling progress indicator overlay
 	if _is_bottling:
 		var progress := _bottle_timer / BOTTLE_TIME
 		var fill_height := 14.0 * progress
 		draw_rect(Rect2(-5, 10 - fill_height, 10, fill_height), Color(0.9, 0.8, 0.3, 0.6))
 
-	# Direction arrow
-	var arrow_color := Color(1, 1, 1, 0.6)
-	var dir_vec := Vector2(direction)
-	var arrow_end := dir_vec * (MACHINE_SIZE / 2 - 4)
-	draw_line(Vector2.ZERO, arrow_end, arrow_color, 2.0)
-	var tip := arrow_end
-	var perp := Vector2(-direction.y, direction.x) * 5.0
-	var back := dir_vec * -8.0
-	draw_colored_polygon([tip, tip + back + perp, tip + back - perp], arrow_color)
+	draw_direction_arrow()

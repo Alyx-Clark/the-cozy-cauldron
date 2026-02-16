@@ -12,6 +12,7 @@ var _output_stage: int = 0  # 0 = idle, 1 = pushing primary, 2 = pushing seconda
 func _ready() -> void:
 	machine_color = Color(0.6, 0.3, 0.7)  # Purple
 	machine_label = "Split"
+	setup_sprite("splitter")
 
 func _get_side_direction() -> Vector2i:
 	# 90° CW: (x,y) → (-y,x)
@@ -104,15 +105,12 @@ func _try_push_secondary() -> void:
 	_pending_type = ItemTypes.Type.NONE
 
 func _draw() -> void:
-	# Draw splitter body
-	var rect := Rect2(-MACHINE_SIZE / 2, -MACHINE_SIZE / 2, MACHINE_SIZE, MACHINE_SIZE)
-	draw_rect(rect, machine_color)
-
+	# Forked arrows overlay (forward + side)
 	var arrow_color := Color(1, 1, 1, 0.7)
 	var dir_vec := Vector2(direction)
 	var side_vec := Vector2(_get_side_direction())
 
-	# Draw forked arrow — incoming line
+	# Incoming line
 	draw_line(dir_vec * (-MACHINE_SIZE / 2 + 4), Vector2.ZERO, arrow_color, 2.0)
 
 	# Forward arrow

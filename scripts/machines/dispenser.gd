@@ -12,6 +12,7 @@ var _spawn_timer: float = 0.0
 func _ready() -> void:
 	machine_color = Color(0.3, 0.65, 0.4)
 	machine_label = "Disp"
+	setup_sprite("dispenser")
 	# Initialize to first available ingredient
 	var available := GameState.get_available_ingredients()
 	if not available.is_empty():
@@ -72,20 +73,7 @@ func on_click() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	# Draw dispenser body
-	var rect := Rect2(-MACHINE_SIZE / 2, -MACHINE_SIZE / 2, MACHINE_SIZE, MACHINE_SIZE)
-	draw_rect(rect, machine_color)
-
-	# Draw ingredient color indicator
+	# Ingredient color indicator (overlay on sprite)
 	var ingredient_color: Color = ItemTypes.COLORS.get(ingredient_type, Color.WHITE)
-	draw_circle(Vector2.ZERO, 12.0, ingredient_color)
-
-	# Direction arrow
-	var arrow_color := Color(1, 1, 1, 0.6)
-	var dir_vec := Vector2(direction)
-	var arrow_end := dir_vec * (MACHINE_SIZE / 2 - 4)
-	draw_line(Vector2.ZERO, arrow_end, arrow_color, 2.0)
-	var tip := arrow_end
-	var perp := Vector2(-direction.y, direction.x) * 5.0
-	var back := dir_vec * -8.0
-	draw_colored_polygon([tip, tip + back + perp, tip + back - perp], arrow_color)
+	draw_circle(Vector2.ZERO, 10.0, ingredient_color)
+	draw_direction_arrow()
