@@ -3,7 +3,7 @@ extends Node2D
 ## preview, hand-selling potions, and dispatching effects/sounds/tutorial triggers.
 ##
 ## Input flows through _unhandled_input (so UI controls get priority):
-##   - Mouse motion → update ghost preview
+##   - Mouse motion → update ghost preview (world coords via camera transform)
 ##   - Left click  → place machine (if tool selected) or interact/hand-sell (if not)
 ##   - Right click → remove machine
 ##   - R key       → rotate placement direction 90° CW
@@ -31,6 +31,12 @@ var _machine_scenes: Dictionary = {}
 # Set by main.gd after creation. Used to fire contextual tutorial hints.
 var tutorial_manager: TutorialManager = null
 
+# Set by main.gd — needed for build range and region checks
+var player: Player = null
+var region_manager: RegionManager = null
+
+const BUILD_RANGE := 5  # Max cells from player to place/interact
+
 func _ready() -> void:
 	EffectsManager.setup(effects_container)
 
@@ -47,10 +53,11 @@ func _ready() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventMouseMotion:
-		_update_ghost_preview(event.position)
+		_update_ghost_preview(get_global_mouse_position())
 
 	if event is InputEventMouseButton and event.pressed:
-		var grid_pos := grid_manager.world_to_grid(event.position)
+		var world_pos := get_global_mouse_position()
+		var grid_pos := grid_manager.world_to_grid(world_pos)
 
 		if event.button_index == MOUSE_BUTTON_LEFT:
 			_try_place(grid_pos)
@@ -61,16 +68,22 @@ func _unhandled_input(event: InputEvent) -> void:
 		if event.keycode == KEY_R:
 			_rotate_direction()
 
-func _update_ghost_preview(mouse_pos: Vector2) -> void:
+func _update_ghost_preview(world_mouse_pos: Vector2) -> void:
 	if selected_machine == "":
 		ghost_preview.hide_preview()
 		return
 
-	var grid_pos := grid_manager.world_to_grid(mouse_pos)
+	var grid_pos := grid_manager.world_to_grid(world_mouse_pos)
 	var world_pos := grid_manager.grid_to_world(grid_pos)
 	var valid := grid_manager.is_in_bounds(grid_pos) and grid_manager.is_cell_empty(grid_pos)
-	# Also check unlock state
+	# Check unlock state
 	if not GameState.is_machine_unlocked(selected_machine):
+		valid = false
+	# Check build range from player
+	if not _is_in_build_range(grid_pos):
+		valid = false
+	# Check region is unlocked
+	if region_manager != null and not region_manager.is_unlocked(grid_pos):
 		valid = false
 	var color := _get_machine_color(selected_machine)
 
@@ -79,6 +92,8 @@ func _update_ghost_preview(mouse_pos: Vector2) -> void:
 func _try_place(grid_pos: Vector2i) -> void:
 	if selected_machine == "":
 		# If clicking on an existing machine, interact with it
+		if not _is_in_build_range(grid_pos):
+			return
 		var existing := grid_manager.get_machine_at(grid_pos)
 		if existing is MachineBase:
 			if existing.has_method("on_click"):
@@ -95,6 +110,12 @@ func _try_place(grid_pos: Vector2i) -> void:
 
 	# Check unlock gating
 	if not GameState.is_machine_unlocked(selected_machine):
+		return
+
+	# Check build range and region
+	if not _is_in_build_range(grid_pos):
+		return
+	if region_manager != null and not region_manager.is_unlocked(grid_pos):
 		return
 
 	var machine: MachineBase = _machine_scenes[selected_machine].instantiate()
@@ -114,6 +135,8 @@ func _try_place(grid_pos: Vector2i) -> void:
 		tutorial_manager.on_machine_placed(selected_machine)
 
 func _try_remove(grid_pos: Vector2i) -> void:
+	if not _is_in_build_range(grid_pos):
+		return
 	var machine := grid_manager.remove_machine(grid_pos)
 	if machine == null:
 		return
@@ -127,9 +150,7 @@ func _try_remove(grid_pos: Vector2i) -> void:
 
 func _rotate_direction() -> void:
 	current_direction = Vector2i(-current_direction.y, current_direction.x)
-	# Update ghost preview
-	var mouse_pos := get_viewport().get_mouse_position()
-	_update_ghost_preview(mouse_pos)
+	_update_ghost_preview(get_global_mouse_position())
 
 func _get_machine_color(machine_type: String) -> Color:
 	match machine_type:
@@ -175,5 +196,15 @@ func _try_hand_sell(machine: MachineBase) -> bool:
 ## Called by toolbar when selection changes.
 func select_machine(machine_type: String) -> void:
 	selected_machine = machine_type
-	var mouse_pos := get_viewport().get_mouse_position()
-	_update_ghost_preview(mouse_pos)
+	_update_ghost_preview(get_global_mouse_position())
+
+## Check if a grid position is within build range of the player.
+## Uses Chebyshev distance (max of dx, dy) — forms a square, not a circle.
+## Returns true if no player exists (backward compat with pre-Phase-4 saves).
+func _is_in_build_range(grid_pos: Vector2i) -> bool:
+	if player == null:
+		return true
+	var player_gp := player.get_grid_pos()
+	var dx := absi(grid_pos.x - player_gp.x)
+	var dy := absi(grid_pos.y - player_gp.y)
+	return dx <= BUILD_RANGE and dy <= BUILD_RANGE

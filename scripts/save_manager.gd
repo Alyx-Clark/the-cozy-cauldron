@@ -23,14 +23,20 @@ var _auto_save_timer: float = 0.0
 var _grid_manager: GridManager = null
 var _order_manager: Node = null
 var _tutorial_manager: Node = null
+var _region_manager: RegionManager = null
+var _player: Player = null
 
 # Populated by load_game() — main.gd reads this to restore the machine layout
 var loaded_machines: Array = []
+# Populated by load_game() — main.gd reads this to restore player position
+var loaded_player_pos = null  # null or Vector2
 
-func setup(grid_manager: GridManager, order_manager: Node, tutorial_manager: Node = null) -> void:
+func setup(grid_manager: GridManager, order_manager: Node, tutorial_manager: Node = null, region_manager: RegionManager = null, player: Player = null) -> void:
 	_grid_manager = grid_manager
 	_order_manager = order_manager
 	_tutorial_manager = tutorial_manager
+	_region_manager = region_manager
+	_player = player
 
 func _process(delta: float) -> void:
 	_auto_save_timer += delta
@@ -59,7 +65,10 @@ func save_game() -> void:
 		"machines": _serialize_machines(),
 		"orders": _order_manager.get_save_data() if _order_manager != null else [],
 		"tutorial_seen": _tutorial_manager.get_save_data() if _tutorial_manager != null else [],
+		"unlocked_regions": _region_manager.get_save_data() if _region_manager != null else [0],
 	}
+	if _player != null:
+		data["player_pos"] = { "x": _player.position.x, "y": _player.position.y }
 
 	var json_string := JSON.stringify(data, "  ")
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
@@ -120,6 +129,18 @@ func load_game() -> bool:
 	if _tutorial_manager != null:
 		var saved_tutorial: Array = data.get("tutorial_seen", [])
 		_tutorial_manager.load_save_data(saved_tutorial)
+
+	# Restore region state
+	if _region_manager != null:
+		var saved_regions: Array = data.get("unlocked_regions", [0])
+		_region_manager.load_save_data(saved_regions)
+
+	# Store player position for main.gd to restore
+	var saved_pos = data.get("player_pos", null)
+	if saved_pos is Dictionary:
+		loaded_player_pos = Vector2(float(saved_pos.get("x", 0)), float(saved_pos.get("y", 0)))
+	else:
+		loaded_player_pos = null
 
 	return true
 

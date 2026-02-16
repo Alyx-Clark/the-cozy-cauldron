@@ -9,11 +9,12 @@ extends Node
 ## Other scripts CAN reference this autoload by its registered name "GameState".
 ##
 ## SIGNALS: This is the central signal hub. Other systems connect to these:
-##   gold_changed    → GoldDisplay (UI bounce), TutorialManager (shop hint)
-##   recipe_unlocked → Toolbar, UnlockShop (button refresh)
-##   machine_unlocked→ Toolbar, UnlockShop (button refresh)
-##   potion_sold     → OrderManager (order progress tracking)
-##   potion_brewed   → TutorialManager (hint triggers)
+##   gold_changed     → GoldDisplay (UI bounce), TutorialManager (shop hint)
+##   recipe_unlocked  → Toolbar, UnlockShop (button refresh)
+##   machine_unlocked → Toolbar, UnlockShop (button refresh)
+##   potion_sold      → OrderManager (order progress tracking)
+##   potion_brewed    → TutorialManager (hint triggers)
+##   region_unlocked  → RegionOverlay (redraw), SaveManager (persist)
 
 # Currency
 var gold: int = 0
@@ -30,6 +31,7 @@ signal recipe_unlocked(index: int)
 signal machine_unlocked(key: String)
 signal potion_sold(potion_type: int, amount: int)
 signal potion_brewed(potion_type: int)
+signal region_unlocked(id: int)
 
 # Potion sell prices — built in _ready()
 var _potion_prices: Dictionary = {}

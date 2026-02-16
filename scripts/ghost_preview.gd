@@ -1,4 +1,16 @@
 extends Node2D
+## Semi-transparent placement preview that follows the mouse cursor.
+##
+## Shows where a machine will be placed and in which direction. Displayed at
+## z_index=5 (above everything in GameWorld) so it's always visible.
+##
+## STATES:
+##   Valid   — machine color at 50% alpha, white direction arrow
+##   Invalid — red tint (out of bounds, occupied, locked region, out of range)
+##   Hidden  — no tool selected or mouse outside grid
+##
+## Controlled by game_world._update_ghost_preview() which calls update_preview()
+## on every mouse motion event, and hide_preview() when no tool is selected.
 
 var machine_color: Color = Color(0.5, 0.5, 0.5, 0.4)
 var direction: Vector2i = Vector2i.RIGHT

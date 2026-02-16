@@ -1,16 +1,16 @@
 class_name GridManager
 extends Node2D
-## 20×11 grid (64px cells → 1280×704 px). Dictionary-based storage mapping
+## 60×35 grid (64px cells → 3840×2240 px). Dictionary-based storage mapping
 ## Vector2i grid coordinates to machine Node2D references.
 ##
 ## Coordinate system:
 ##   Grid (0,0) = top-left cell → world position (32, 32) (cell center)
-##   Grid (19,10) = bottom-right cell → world position (1248, 672)
+##   Grid (59,34) = bottom-right cell → world position (3808, 2208)
 ##   Conversion: world_pos = grid_pos * 64 + 32
 
 const CELL_SIZE := 64
-const GRID_WIDTH := 20
-const GRID_HEIGHT := 11
+const GRID_WIDTH := 60
+const GRID_HEIGHT := 35
 
 var _grid: Dictionary = {}  # Vector2i → Node2D (machine) or absent (empty cell)
 

@@ -3,11 +3,12 @@ extends Node2D
 ##
 ## INITIALIZATION ORDER (matters!):
 ##   1. Scene-defined nodes (_ready): GameWorld, Toolbar, UI CanvasLayer
-##   2. Managers: OrderManager, SaveManager, TutorialManager (created via .new())
-##   3. UI panels: GoldDisplay, OrderPanel, UnlockShop (added to UI CanvasLayer)
-##   4. Cross-references: order_manager ↔ order_panel, save_manager ← grid + order + tutorial
-##   5. Load save (or show tutorial on fresh start)
-##   6. Restore machines from save data (if loaded)
+##   2. Player + RegionManager (structural — needed before save/load)
+##   3. Managers: OrderManager, SaveManager, TutorialManager (created via .new())
+##   4. UI panels: GoldDisplay, OrderPanel, UnlockShop, Minimap (added to UI CanvasLayer)
+##   5. Cross-references: order_manager ↔ order_panel, save_manager ← grid + order + tutorial + region + player
+##   6. Load save (or show tutorial on fresh start)
+##   7. Restore machines + player position from save data
 ##
 ## Most nodes are created in code (not in the .tscn) because they're pure scripts
 ## with no scene structure — just a single node with a script attached.
@@ -15,12 +16,44 @@ extends Node2D
 @onready var game_world: Node2D = $GameWorld
 @onready var toolbar: PanelContainer = $UI/Toolbar
 
+var player: Player
+var region_manager: RegionManager
 var order_manager: Node
 var save_manager: Node
 var tutorial_manager: TutorialManager
+var minimap: PanelContainer
+
+# Region unlock prompt management
+var _region_prompt: Node = null
+var _prompt_region_id: int = -1
+
+const CELL_SIZE := 64
+# Default player spawn: center of Region 0 (Starter Workshop: 0,0 → 14,11)
+const DEFAULT_SPAWN := Vector2(7 * 64 + 32, 5 * 64 + 32)
 
 func _ready() -> void:
 	toolbar.machine_selected.connect(game_world.select_machine)
+
+	# --- Create Player (CharacterBody2D with Camera2D) ---
+	player = preload("res://scenes/player.tscn").instantiate()
+	player.position = DEFAULT_SPAWN
+	game_world.add_child(player)
+	game_world.player = player
+
+	# --- Create RegionManager ---
+	region_manager = RegionManager.new()
+	region_manager.name = "RegionManager"
+	add_child(region_manager)
+	game_world.region_manager = region_manager
+
+	# --- Create RegionOverlay (visual layer in GameWorld) ---
+	var region_overlay := RegionOverlay.new()
+	region_overlay.name = "RegionOverlay"
+	region_overlay.z_index = 0
+	region_overlay.region_manager = region_manager
+	# Insert before MachineContainer so it draws below machines
+	game_world.add_child(region_overlay)
+	game_world.move_child(region_overlay, 1)  # After GridOverlay
 
 	# --- Create manager nodes (order matters: save_manager needs references to others) ---
 
@@ -54,14 +87,24 @@ func _ready() -> void:
 	unlock_shop.name = "UnlockShop"
 	$UI.add_child(unlock_shop)
 
+	minimap = preload("res://scripts/ui/minimap.gd").new()
+	minimap.grid_manager = game_world.grid_manager
+	minimap.region_manager = region_manager
+	minimap.player = player
+	$UI.add_child(minimap)
+
 	# --- Wire save manager to all persistent subsystems ---
-	save_manager.setup(game_world.grid_manager, order_manager, tutorial_manager)
+	save_manager.setup(game_world.grid_manager, order_manager, tutorial_manager, region_manager, player)
 
 	# --- Load or fresh start ---
 	if save_manager.load_game():
 		_restore_machines()
+		_restore_player_pos()
 	else:
 		tutorial_manager.show_initial_hint()
+
+func _process(_delta: float) -> void:
+	_check_region_prompt()
 
 func _restore_machines() -> void:
 	var machines: Array = save_manager.loaded_machines
@@ -93,3 +136,50 @@ func _restore_machines() -> void:
 			for item_type in entry["stored_items"]:
 				machine.stored_items.append(int(item_type))
 			machine.queue_redraw()
+
+func _restore_player_pos() -> void:
+	if save_manager.loaded_player_pos != null:
+		player.position = save_manager.loaded_player_pos
+
+## Check if player is near a locked region boundary and show/hide unlock prompt.
+func _check_region_prompt() -> void:
+	if region_manager == null or player == null:
+		return
+
+	var player_gp := player.get_grid_pos()
+	var nearby_locked: Dictionary = _get_nearby_locked_region(player_gp)
+
+	if nearby_locked.is_empty():
+		# No locked region nearby — dismiss prompt if showing
+		if _region_prompt != null:
+			_region_prompt.queue_free()
+			_region_prompt = null
+			_prompt_region_id = -1
+		return
+
+	var rid: int = nearby_locked["id"]
+	# Already showing this prompt
+	if _region_prompt != null and _prompt_region_id == rid:
+		return
+
+	# Dismiss old prompt if it's for a different region
+	if _region_prompt != null:
+		_region_prompt.queue_free()
+		_region_prompt = null
+
+	# Show new prompt
+	var prompt := preload("res://scripts/ui/region_prompt.gd").new()
+	prompt.setup(nearby_locked, region_manager)
+	$UI.add_child(prompt)
+	_region_prompt = prompt
+	_prompt_region_id = rid
+
+## Find a locked region within 2 cells of player grid pos.
+func _get_nearby_locked_region(player_gp: Vector2i) -> Dictionary:
+	for dx in range(-2, 3):
+		for dy in range(-2, 3):
+			var check_pos := player_gp + Vector2i(dx, dy)
+			var region := region_manager.get_region_at(check_pos)
+			if not region.is_empty() and not (region["id"] in region_manager.unlocked_regions):
+				return region
+	return {}
