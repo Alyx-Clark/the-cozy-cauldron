@@ -41,23 +41,8 @@ func _ready() -> void:
 	offset_top = 40
 	offset_bottom = 40 + MAP_H + 12
 
-	# Panel style
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.07, 0.1, 0.85)
-	style.border_color = Color(0.5, 0.4, 0.3, 0.6)
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
-	style.content_margin_left = 4
-	style.content_margin_right = 4
-	style.content_margin_top = 4
-	style.content_margin_bottom = 4
-	add_theme_stylebox_override("panel", style)
+	# Wood panel style
+	add_theme_stylebox_override("panel", UITheme.make_wood_panel_style())
 
 	# Custom draw control inside the panel
 	_draw_node = Control.new()

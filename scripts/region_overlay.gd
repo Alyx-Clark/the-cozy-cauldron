@@ -74,21 +74,22 @@ func _draw_dashed_line(from: Vector2, to: Vector2, color: Color, width: float, d
 ## Draw region name and cost label centered in the world rect.
 func _draw_region_label(rect: Rect2, region_name: String, cost: int) -> void:
 	var center := rect.get_center()
+	var font: Font = UITheme.get_font()
 	draw_string(
-		ThemeDB.fallback_font,
+		font,
 		center + Vector2(-60, -6),
 		region_name,
 		HORIZONTAL_ALIGNMENT_CENTER,
 		120,
-		14,
-		Color(0.9, 0.8, 0.6, 0.7),
+		16,
+		Color(0.93, 0.85, 0.6, 0.75),
 	)
 	draw_string(
-		ThemeDB.fallback_font,
-		center + Vector2(-30, 14),
+		font,
+		center + Vector2(-30, 16),
 		str(cost) + "g",
 		HORIZONTAL_ALIGNMENT_CENTER,
 		60,
-		12,
-		Color(1.0, 0.9, 0.3, 0.6),
+		14,
+		Color(1.0, 0.9, 0.3, 0.65),
 	)

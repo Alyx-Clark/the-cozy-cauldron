@@ -97,7 +97,7 @@ func _try_show(hint_id: String) -> void:
 	hints_seen.append(hint_id)
 	_show_hint_panel(hint_text)
 
-func _show_hint_panel(text: String) -> void:
+func _show_hint_panel(hint_text: String) -> void:
 	if _ui_layer == null:
 		return
 
@@ -109,41 +109,25 @@ func _show_hint_panel(text: String) -> void:
 	panel.offset_left = -220
 	panel.offset_right = 220
 	panel.offset_top = 60
-	panel.offset_bottom = 110
+	panel.offset_bottom = 115
 
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.08, 0.07, 0.12, 0.92)
-	style.border_color = Color(0.5, 0.4, 0.7, 0.6)
-	style.border_width_left = 1
-	style.border_width_right = 1
-	style.border_width_top = 1
-	style.border_width_bottom = 1
-	style.corner_radius_top_left = 6
-	style.corner_radius_top_right = 6
-	style.corner_radius_bottom_left = 6
-	style.corner_radius_bottom_right = 6
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
-	panel.add_theme_stylebox_override("panel", style)
+	# Parchment style
+	panel.add_theme_stylebox_override("panel", UITheme.make_parchment_style())
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 4)
 	panel.add_child(vbox)
 
 	var label := Label.new()
-	label.text = text
-	label.add_theme_color_override("font_color", Color(0.9, 0.85, 0.7))
-	label.add_theme_font_size_override("font_size", 14)
+	label.text = hint_text
+	UITheme.apply_label_style(label, UITheme.FONT_SIZE_MEDIUM, Color(0.45, 0.35, 0.2))
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(label)
 
 	var dismiss := Label.new()
-	dismiss.text = "(click anywhere to dismiss)"
-	dismiss.add_theme_color_override("font_color", Color(0.6, 0.55, 0.5, 0.6))
-	dismiss.add_theme_font_size_override("font_size", 11)
+	dismiss.text = "(click to dismiss)"
+	UITheme.apply_label_style(dismiss, UITheme.FONT_SIZE_SMALL, Color(0.55, 0.45, 0.3, 0.6))
 	dismiss.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(dismiss)
 

@@ -18,23 +18,8 @@ func setup(region: Dictionary, rm: RegionManager) -> void:
 	_region_id = region["id"]
 	_region_manager = rm
 
-	# Panel style
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.12, 0.1, 0.08, 0.92)
-	style.border_color = Color(0.7, 0.55, 0.2, 0.7)
-	style.border_width_left = 2
-	style.border_width_right = 2
-	style.border_width_top = 2
-	style.border_width_bottom = 2
-	style.corner_radius_top_left = 8
-	style.corner_radius_top_right = 8
-	style.corner_radius_bottom_left = 8
-	style.corner_radius_bottom_right = 8
-	style.content_margin_left = 16
-	style.content_margin_right = 16
-	style.content_margin_top = 12
-	style.content_margin_bottom = 12
-	add_theme_stylebox_override("panel", style)
+	# Wood panel style
+	add_theme_stylebox_override("panel", UITheme.make_wood_panel_style())
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 6)
@@ -42,18 +27,32 @@ func setup(region: Dictionary, rm: RegionManager) -> void:
 
 	var title := Label.new()
 	title.text = "Unlock " + region["name"] + "?"
-	title.add_theme_color_override("font_color", Color(0.95, 0.85, 0.6))
-	title.add_theme_font_size_override("font_size", 16)
+	UITheme.apply_label_style(title, UITheme.FONT_SIZE_MEDIUM, UITheme.COLOR_TITLE)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	vbox.add_child(title)
 
-	var cost_label := Label.new()
-	cost_label.text = "Cost: " + str(region["cost"]) + "g"
+	# Cost row with coin icon
+	var cost_row := HBoxContainer.new()
+	cost_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	cost_row.add_theme_constant_override("separation", 4)
+	vbox.add_child(cost_row)
+
+	var cost_prefix := Label.new()
+	cost_prefix.text = "Cost: "
 	var can_afford: bool = GameState.gold >= region["cost"]
-	cost_label.add_theme_color_override("font_color", Color(0.3, 1.0, 0.4) if can_afford else Color(1.0, 0.4, 0.3))
-	cost_label.add_theme_font_size_override("font_size", 13)
-	cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(cost_label)
+	UITheme.apply_label_style(cost_prefix, 13, UITheme.COLOR_POSITIVE if can_afford else UITheme.COLOR_NEGATIVE)
+	cost_row.add_child(cost_prefix)
+
+	var coin := TextureRect.new()
+	coin.texture = UITheme.get_coin_texture()
+	coin.custom_minimum_size = Vector2(12, 12)
+	coin.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	cost_row.add_child(coin)
+
+	var cost_amount := Label.new()
+	cost_amount.text = str(region["cost"]) + "g"
+	UITheme.apply_label_style(cost_amount, 13, UITheme.COLOR_POSITIVE if can_afford else UITheme.COLOR_NEGATIVE)
+	cost_row.add_child(cost_amount)
 
 	var hbox := HBoxContainer.new()
 	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
@@ -64,12 +63,14 @@ func setup(region: Dictionary, rm: RegionManager) -> void:
 	yes_btn.text = "Yes"
 	yes_btn.custom_minimum_size = Vector2(60, 28)
 	yes_btn.disabled = not can_afford
+	UITheme.apply_button_theme(yes_btn, 14)
 	yes_btn.pressed.connect(_on_yes)
 	hbox.add_child(yes_btn)
 
 	var no_btn := Button.new()
 	no_btn.text = "No"
 	no_btn.custom_minimum_size = Vector2(60, 28)
+	UITheme.apply_button_theme(no_btn, 14)
 	no_btn.pressed.connect(_on_no)
 	hbox.add_child(no_btn)
 
@@ -78,10 +79,10 @@ func setup(region: Dictionary, rm: RegionManager) -> void:
 	anchor_right = 0.5
 	anchor_top = 0.0
 	anchor_bottom = 0.0
-	offset_left = -120
-	offset_right = 120
+	offset_left = -130
+	offset_right = 130
 	offset_top = 10
-	offset_bottom = 100
+	offset_bottom = 110
 
 	# Fade in
 	modulate.a = 0.0

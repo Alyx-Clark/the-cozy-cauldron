@@ -1,10 +1,9 @@
-extends HBoxContainer
+extends PanelContainer
 ## Top-right HUD showing gold coin icon + amount. Animates on change:
-## scale bounces 1.0→1.2→1.0 and text flashes green (gain) or red (spend).
+## scale bounces 1.0->1.2->1.0 and text flashes green (gain) or red (spend).
 
 var _label: Label
 var _previous_gold: int = 0
-var _default_color := Color(1.0, 0.9, 0.6)
 
 func _ready() -> void:
 	# Position in top-right
@@ -13,27 +12,32 @@ func _ready() -> void:
 	anchor_top = 0.0
 	anchor_bottom = 0.0
 	offset_left = -160
-	offset_right = -16
-	offset_top = 12
-	offset_bottom = 44
+	offset_right = -12
+	offset_top = 8
+	offset_bottom = 42
 
-	# Coin icon (drawn as a colored label)
-	var coin := Label.new()
-	coin.text = "●"
-	coin.add_theme_color_override("font_color", Color(1.0, 0.85, 0.1))
-	coin.add_theme_font_size_override("font_size", 22)
-	add_child(coin)
+	# Wood panel background
+	add_theme_stylebox_override("panel", UITheme.make_wood_panel_style())
+
+	var hbox := HBoxContainer.new()
+	hbox.add_theme_constant_override("separation", 6)
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	add_child(hbox)
+
+	# Coin icon sprite
+	var coin_icon := TextureRect.new()
+	coin_icon.texture = UITheme.get_coin_texture()
+	coin_icon.custom_minimum_size = Vector2(16, 16)
+	coin_icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	hbox.add_child(coin_icon)
 
 	# Gold amount label
 	_label = Label.new()
 	_label.text = "0g"
-	_label.add_theme_color_override("font_color", _default_color)
-	_label.add_theme_font_size_override("font_size", 20)
+	UITheme.apply_label_style(_label, UITheme.FONT_SIZE_LARGE, UITheme.COLOR_GOLD)
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	add_child(_label)
-
-	add_theme_constant_override("separation", 6)
+	hbox.add_child(_label)
 
 	_previous_gold = GameState.gold
 	GameState.gold_changed.connect(_on_gold_changed)
@@ -52,8 +56,8 @@ func _on_gold_changed(new_amount: int) -> void:
 	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.15).set_ease(Tween.EASE_IN)
 
 	# Color flash
-	var flash_color := Color(0.3, 1.0, 0.3) if gained else Color(1.0, 0.35, 0.3)
+	var flash_color := UITheme.COLOR_POSITIVE if gained else UITheme.COLOR_NEGATIVE
 	_label.add_theme_color_override("font_color", flash_color)
 	var color_tween := create_tween()
 	color_tween.tween_interval(0.12)
-	color_tween.tween_callback(_label.add_theme_color_override.bind("font_color", _default_color))
+	color_tween.tween_callback(_label.add_theme_color_override.bind("font_color", UITheme.COLOR_GOLD))

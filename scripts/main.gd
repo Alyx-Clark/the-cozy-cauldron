@@ -61,6 +61,15 @@ func _ready() -> void:
 	game_world.add_child(region_overlay)
 	game_world.move_child(region_overlay, 1)  # After GridOverlay
 
+	# --- Create BuildRangeOverlay (visual layer in GameWorld) ---
+	var build_range_overlay := BuildRangeOverlay.new()
+	build_range_overlay.name = "BuildRangeOverlay"
+	build_range_overlay.z_index = 0
+	build_range_overlay.player = player
+	build_range_overlay.game_world = game_world
+	game_world.add_child(build_range_overlay)
+	game_world.move_child(build_range_overlay, 2)  # After RegionOverlay
+
 	# --- Create manager nodes (order matters: save_manager needs references to others) ---
 
 	order_manager = preload("res://scripts/order_manager.gd").new()
@@ -98,6 +107,9 @@ func _ready() -> void:
 	minimap.region_manager = region_manager
 	minimap.player = player
 	$UI.add_child(minimap)
+
+	# --- Create Tooltip (must be after other UI so it draws on top) ---
+	Tooltip.setup($UI)
 
 	# --- Wire save manager to all persistent subsystems ---
 	save_manager.setup(game_world.grid_manager, order_manager, tutorial_manager, region_manager, player)

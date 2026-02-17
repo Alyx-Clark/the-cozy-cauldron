@@ -7,6 +7,14 @@ Output structure:
   assets/sprites/items/{name}.png            (30 files, 20x20)
   assets/sprites/items/bottle_overlay.png    (20x20)
   assets/sprites/player/player_spritesheet.png (128x192: 4 cols x 4 rows, 32x48)
+  assets/sprites/ui/wood_panel.png           (48x48, 9-slice wood panel)
+  assets/sprites/ui/wood_panel_dark.png      (48x48, darker variant)
+  assets/sprites/ui/parchment.png            (48x48, 9-slice parchment)
+  assets/sprites/ui/coin.png                 (16x16, gold coin)
+  assets/sprites/ui/lock.png                 (16x16, padlock)
+  assets/sprites/ui/button_wood.png          (32x16, 9-slice button normal)
+  assets/sprites/ui/button_wood_hover.png    (32x16, button hover)
+  assets/sprites/ui/button_wood_pressed.png  (32x16, button pressed)
 """
 
 import os
@@ -747,6 +755,201 @@ def generate_player_spritesheet():
     return img
 
 
+# ── UI Sprites ────────────────────────────────────────────────────────────────
+
+def ui_wood_panel():
+    """48x48 9-slice wood panel: warm brown planks, darker border edges (~6px margins)."""
+    img = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    base = rgba(120, 82, 45)
+    border = darken(base, 0.6)
+    inner = lighten(base, 1.1)
+    highlight = lighten(base, 1.25)
+
+    # Fill base
+    draw.rectangle([0, 0, 47, 47], fill=base)
+    # Inner area slightly lighter
+    draw.rectangle([6, 6, 41, 41], fill=inner)
+
+    # Border edges (6px thick)
+    draw.rectangle([0, 0, 47, 5], fill=border)   # top
+    draw.rectangle([0, 42, 47, 47], fill=border)  # bottom
+    draw.rectangle([0, 0, 5, 47], fill=border)    # left
+    draw.rectangle([42, 0, 47, 47], fill=border)  # right
+
+    # Inner highlight line (top-left bevel)
+    draw.line([6, 6, 41, 6], fill=highlight, width=1)
+    draw.line([6, 6, 6, 41], fill=highlight, width=1)
+
+    # Inner shadow (bottom-right)
+    shadow = darken(inner, 0.8)
+    draw.line([7, 41, 41, 41], fill=shadow, width=1)
+    draw.line([41, 7, 41, 41], fill=shadow, width=1)
+
+    # Plank lines
+    plank = darken(inner, 0.85)
+    draw.line([6, 18, 41, 18], fill=plank, width=1)
+    draw.line([6, 30, 41, 30], fill=plank, width=1)
+
+    # Subtle wood grain
+    rng = random.Random(100)
+    for _ in range(30):
+        gx = rng.randint(7, 40)
+        gy = rng.randint(7, 40)
+        grain = darken(inner, rng.uniform(0.9, 0.97))
+        img.putpixel((gx, gy), grain)
+
+    return img
+
+
+def ui_wood_panel_dark():
+    """48x48 darker wood panel for tooltips."""
+    img = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    base = rgba(75, 52, 30)
+    border = darken(base, 0.55)
+    inner = lighten(base, 1.1)
+
+    draw.rectangle([0, 0, 47, 47], fill=base)
+    draw.rectangle([6, 6, 41, 41], fill=inner)
+
+    # Border
+    draw.rectangle([0, 0, 47, 5], fill=border)
+    draw.rectangle([0, 42, 47, 47], fill=border)
+    draw.rectangle([0, 0, 5, 47], fill=border)
+    draw.rectangle([42, 0, 47, 47], fill=border)
+
+    # Highlight
+    highlight = lighten(inner, 1.2)
+    draw.line([6, 6, 41, 6], fill=highlight, width=1)
+    draw.line([6, 6, 6, 41], fill=highlight, width=1)
+
+    # Grain
+    rng = random.Random(101)
+    for _ in range(20):
+        gx = rng.randint(7, 40)
+        gy = rng.randint(7, 40)
+        grain = darken(inner, rng.uniform(0.9, 0.97))
+        img.putpixel((gx, gy), grain)
+
+    return img
+
+
+def ui_parchment():
+    """48x48 9-slice parchment: cream/tan aged paper."""
+    img = Image.new("RGBA", (48, 48), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    base = rgba(225, 205, 165)
+    border = darken(base, 0.7)
+    inner = lighten(base, 1.05)
+
+    draw.rectangle([0, 0, 47, 47], fill=base)
+    draw.rectangle([5, 5, 42, 42], fill=inner)
+
+    # Border
+    draw.rectangle([0, 0, 47, 4], fill=border)
+    draw.rectangle([0, 43, 47, 47], fill=border)
+    draw.rectangle([0, 0, 4, 47], fill=border)
+    draw.rectangle([43, 0, 47, 47], fill=border)
+
+    # Aged spots/stains
+    rng = random.Random(102)
+    for _ in range(40):
+        gx = rng.randint(5, 42)
+        gy = rng.randint(5, 42)
+        stain = darken(inner, rng.uniform(0.92, 0.98))
+        img.putpixel((gx, gy), stain)
+    # Lighter spots
+    for _ in range(15):
+        gx = rng.randint(5, 42)
+        gy = rng.randint(5, 42)
+        light = lighten(inner, rng.uniform(1.01, 1.04))
+        img.putpixel((gx, gy), light)
+
+    return img
+
+
+def ui_coin():
+    """16x16 gold coin icon."""
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    gold = rgba(220, 185, 35)
+    gold_dark = darken(gold, 0.65)
+    gold_light = lighten(gold, 1.3)
+
+    # Coin body
+    draw.ellipse([2, 2, 13, 13], fill=gold)
+    # Edge shadow
+    draw.arc([2, 2, 13, 13], 30, 210, fill=gold_dark, width=1)
+    # Highlight
+    draw.arc([2, 2, 13, 13], 210, 30, fill=gold_light, width=1)
+    # Inner ring
+    draw.ellipse([4, 4, 11, 11], outline=gold_dark, width=1)
+    # "G" mark — simple cross
+    draw.line([7, 5, 7, 10], fill=gold_dark, width=1)
+    draw.line([5, 7, 9, 7], fill=gold_dark, width=1)
+
+    return img
+
+
+def ui_lock():
+    """16x16 padlock icon."""
+    img = Image.new("RGBA", (16, 16), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+    body = rgba(160, 140, 90)
+    shackle = rgba(130, 120, 80)
+
+    # Shackle (top arc)
+    draw.arc([4, 1, 11, 8], 180, 0, fill=shackle, width=2)
+    draw.line([4, 4, 4, 7], fill=shackle, width=2)
+    draw.line([11, 4, 11, 7], fill=shackle, width=2)
+
+    # Lock body
+    draw.rectangle([3, 7, 12, 14], fill=body)
+    draw.rectangle([3, 7, 12, 14], outline=darken(body, 0.6), width=1)
+
+    # Keyhole
+    draw.ellipse([6, 9, 9, 12], fill=darken(body, 0.4))
+    draw.line([7, 11, 7, 13], fill=darken(body, 0.4), width=1)
+
+    return img
+
+
+def ui_button_wood(variant="normal"):
+    """32x16 9-slice wood button. variant: 'normal', 'hover', 'pressed'."""
+    img = Image.new("RGBA", (32, 16), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(img)
+
+    if variant == "normal":
+        base = rgba(140, 100, 60)
+        border = darken(base, 0.6)
+    elif variant == "hover":
+        base = rgba(165, 125, 75)
+        border = darken(base, 0.6)
+    else:  # pressed
+        base = rgba(105, 75, 45)
+        border = darken(base, 0.6)
+
+    inner = lighten(base, 1.1)
+    highlight = lighten(base, 1.3)
+
+    # Fill
+    draw.rectangle([0, 0, 31, 15], fill=base)
+    draw.rectangle([3, 3, 28, 12], fill=inner)
+
+    # Border
+    draw.rectangle([0, 0, 31, 2], fill=border)
+    draw.rectangle([0, 13, 31, 15], fill=border)
+    draw.rectangle([0, 0, 2, 15], fill=border)
+    draw.rectangle([29, 0, 31, 15], fill=border)
+
+    # Top highlight (only for normal and hover)
+    if variant != "pressed":
+        draw.line([3, 3, 28, 3], fill=highlight, width=1)
+
+    return img
+
+
 # ── Main Generation ──────────────────────────────────────────────────────────
 
 def main():
@@ -838,7 +1041,31 @@ def main():
     player.save(os.path.join(player_dir, "player_spritesheet.png"))
     print("  player/player_spritesheet.png")
 
-    total = 1 + len(machines) + len(ingredient_sprites) + len(potion_colors) + 1 + 1
+    # ── UI sprites ──
+    ui_dir = os.path.join(BASE, "ui")
+    ensure_dir(ui_dir)
+
+    ui_sprites = {
+        "wood_panel": ui_wood_panel,
+        "wood_panel_dark": ui_wood_panel_dark,
+        "parchment": ui_parchment,
+        "coin": ui_coin,
+        "lock": ui_lock,
+    }
+    for name, fn in ui_sprites.items():
+        sprite = fn()
+        sprite.save(os.path.join(ui_dir, f"{name}.png"))
+        print(f"  ui/{name}.png")
+
+    # Button variants
+    for variant in ["normal", "hover", "pressed"]:
+        suffix = "" if variant == "normal" else f"_{variant}"
+        sprite = ui_button_wood(variant)
+        sprite.save(os.path.join(ui_dir, f"button_wood{suffix}.png"))
+        print(f"  ui/button_wood{suffix}.png")
+
+    ui_count = len(ui_sprites) + 3  # 3 button variants
+    total = 1 + len(machines) + len(ingredient_sprites) + len(potion_colors) + 1 + 1 + ui_count
     print(f"\nDone! Generated {total} sprites.")
 
 
