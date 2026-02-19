@@ -66,6 +66,7 @@ func save_game() -> void:
 		"orders": _order_manager.get_save_data() if _order_manager != null else [],
 		"tutorial_seen": _tutorial_manager.get_save_data() if _tutorial_manager != null else [],
 		"unlocked_regions": _region_manager.get_save_data() if _region_manager != null else [0],
+		"endgame_shown": GameState.endgame_shown,
 	}
 	if _player != null:
 		data["player_pos"] = { "x": _player.position.x, "y": _player.position.y }
@@ -134,6 +135,9 @@ func load_game() -> bool:
 	if _region_manager != null:
 		var saved_regions: Array = data.get("unlocked_regions", [0])
 		_region_manager.load_save_data(saved_regions)
+
+	# Restore endgame flag
+	GameState.endgame_shown = bool(data.get("endgame_shown", false))
 
 	# Store player position for main.gd to restore
 	var saved_pos = data.get("player_pos", null)

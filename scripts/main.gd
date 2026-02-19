@@ -23,6 +23,7 @@ var order_manager: Node
 var save_manager: Node
 var tutorial_manager: TutorialManager
 var minimap: PanelContainer
+var pause_menu: Node = null
 
 # Region unlock prompt management
 var _region_prompt: Node = null
@@ -114,12 +115,26 @@ func _ready() -> void:
 	# --- Wire save manager to all persistent subsystems ---
 	save_manager.setup(game_world.grid_manager, order_manager, tutorial_manager, region_manager, player)
 
+	# --- Create PauseMenu (CanvasLayer, must be after UI so ESC coordination works) ---
+	pause_menu = preload("res://scripts/ui/pause_menu.gd").new()
+	pause_menu.name = "PauseMenu"
+	pause_menu.save_manager = save_manager
+	add_child(pause_menu)
+
 	# --- Load or fresh start ---
 	if save_manager.load_game():
 		_restore_machines()
 		_restore_player_pos()
 	else:
 		tutorial_manager.show_initial_hint()
+
+	# --- Endgame detection ---
+	GameState.recipe_unlocked.connect(_check_endgame)
+	GameState.machine_unlocked.connect(_check_endgame)
+	GameState.region_unlocked.connect(_check_endgame)
+
+	# --- Play gameplay music (crossfades from menu theme if coming from main menu) ---
+	MusicManager.play_track("gameplay_theme")
 
 func _process(_delta: float) -> void:
 	_check_region_prompt()
@@ -201,6 +216,22 @@ func _get_nearby_locked_region(player_gp: Vector2i) -> Dictionary:
 			if not region.is_empty() and not (region["id"] in region_manager.unlocked_regions):
 				return region
 	return {}
+
+## Check if all content is unlocked and show endgame popup (once per save).
+func _check_endgame(_arg = null) -> void:
+	if GameState.endgame_shown:
+		return
+	# All 10 recipes
+	if GameState.unlocked_recipes.size() < 10:
+		return
+	# All 9 machines
+	if GameState.unlocked_machines.size() < 9:
+		return
+	# All 7 regions
+	if not region_manager.all_unlocked():
+		return
+	GameState.endgame_shown = true
+	EndgamePopup.show_popup(self)
 
 ## Replace the Background ColorRect with a TileMapLayer showing warm wood floor.
 func _setup_floor() -> void:

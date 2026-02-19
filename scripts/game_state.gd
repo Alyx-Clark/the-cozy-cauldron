@@ -25,6 +25,9 @@ var unlocked_recipes: Array = [0, 1]
 # Unlocked machine keys
 var unlocked_machines: Array = ["conveyor", "dispenser", "cauldron"]
 
+# Whether endgame popup has been shown (prevents re-showing)
+var endgame_shown: bool = false
+
 # Signals
 signal gold_changed(new_amount: int)
 signal recipe_unlocked(index: int)
@@ -94,6 +97,15 @@ func _ready() -> void:
 			if i < PRICE_BY_RECIPE.size():
 				_potion_prices[potion_type] = PRICE_BY_RECIPE[i]
 	sync_recipe_unlocks()
+
+## Reset to fresh-start state (used when starting a new game from main menu).
+func reset() -> void:
+	gold = 0
+	unlocked_recipes = [0, 1]
+	unlocked_machines = ["conveyor", "dispenser", "cauldron"]
+	endgame_shown = false
+	sync_recipe_unlocks()
+	gold_changed.emit(gold)
 
 ## Sell a potion. is_bottled doubles the price.
 func sell_potion(potion_type: int, is_bottled: bool = false) -> void:

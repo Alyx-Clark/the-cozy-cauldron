@@ -21,6 +21,7 @@ extends Node
 
 const SAMPLE_RATE := 22050
 const MIX_RATE := 22050
+const BASE_VOLUME_DB := -8.0
 
 var _players: Dictionary = {}  # name → AudioStreamPlayer
 
@@ -34,6 +35,12 @@ func _ready() -> void:
 	_create_sound("bottle", _gen_sine_decay(1000.0, 0.1))
 	_create_sound("order_complete", _gen_arpeggio([500.0, 700.0, 900.0], 0.13))
 	_create_sound("click", _gen_noise_burst(0.03))
+
+	# Connect to SettingsManager for SFX volume changes
+	var settings = get_node_or_null("/root/SettingsManager")
+	if settings:
+		settings.settings_changed.connect(_on_settings_changed)
+		_on_settings_changed()  # Apply initial volume
 
 ## Play a named sound effect.
 func play(sound_name: String) -> void:
@@ -50,9 +57,18 @@ func _create_sound(sound_name: String, data: PackedByteArray) -> void:
 
 	var player := AudioStreamPlayer.new()
 	player.stream = stream
-	player.volume_db = -8.0
+	player.volume_db = BASE_VOLUME_DB
 	add_child(player)
 	_players[sound_name] = player
+
+func _on_settings_changed() -> void:
+	var settings = get_node_or_null("/root/SettingsManager")
+	if settings == null:
+		return
+	var vol: float = settings.sfx_volume
+	var db: float = linear_to_db(vol) + BASE_VOLUME_DB if vol > 0.0 else -80.0
+	for player in _players.values():
+		player.volume_db = db
 
 ## Frequency sweep (rising or falling).
 func _gen_sweep(freq_start: float, freq_end: float, duration: float) -> PackedByteArray:
